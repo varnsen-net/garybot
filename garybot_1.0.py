@@ -393,16 +393,16 @@ class bettor:
 	def goodBet(nick, bet, userobj):
 		bet_string = str(bet).replace(".", "")
 		if bet_string.isnumeric() == False:
-			reply = nick + ": Hey here's an idea: maybe try expressing your bets with numbers, you fucking idiot."
+			reply = nick + ": Your bet must be a positive real number."
 			irc.sendMsg(reply, gchan)
 			return False
 		elif float(bet) > userobj.balance:
 			userbalance = "${:,.2f}".format(userobj.balance)
-			reply = nick + ": Check your balance, idiot. You've only got " + userbalance + " remaining."
+			reply = nick + ": Insufficient balance. You've only got " + userbalance + " remaining."
 			irc.sendMsg(reply, gchan)
 			return False
 		elif float(bet) < 1:
-			reply = nick + ": The minimum bet is $1. Goddamn."
+			reply = nick + ": The minimum bet is $1."
 			irc.sendMsg(reply, gchan)
 			return False
 		else:
@@ -432,7 +432,7 @@ class bettor:
 			reply = bettor.makeBalStr(nick, userobj)
 			irc.sendMsg(reply, gchan)
 		else:
-			reply = nick + ": " + wordlist[1] + " is not in the books. Try picking a player who actually exists, idiot."
+			reply = nick + ": " + wordlist[1] + " is not in the books. You can add yourself using the .reup command."
 			irc.sendMsg(reply, gchan)
 
 	def makeBalStr(nick, userobj):
@@ -460,7 +460,7 @@ class bettor:
 			irc.sendMsg(reply, gchan)
 			bettor.saveBettors(bankrolls_path, betobjs)
 		elif ident != adminident:
-			reply = nick + ": Lmao nice try, idiot."
+			reply = nick + ": Lmao nice try, but you're not the bot admin."
 			irc.sendMsg(reply, gchan)
 
 	def resetBalance(nick, ident, adminident, wordlist, betobjs):
@@ -475,7 +475,7 @@ class bettor:
 			userobj.netprofit = 0.0
 			bettor.saveBettors(bankrolls_path, betobjs)
 		elif ident != adminident:
-			reply = nick + ": Lmao nice try, idiot."
+			reply = nick + ": Lmao nice try, but you're not the bot admin."
 			irc.sendMsg(reply, gchan)
 
 	def flipCoin():
@@ -496,7 +496,7 @@ class bettor:
 		
 		# did the user input enough arguments? if not, stop playing.
 		if wordlistlen < 3:
-			reply = nick + ": The correct syntax is %flip <choice> <wager>. Idiot."
+			reply = nick + ": The correct syntax is .flip <choice> <wager>."
 			irc.sendMsg(reply, gchan)
 			return
 			
@@ -508,7 +508,7 @@ class bettor:
 		# did the user make a valid side selection? if not, stop playing.
 		coin_side_choice = wordlist[1].lower()
 		if re.match("^h$|^t$", coin_side_choice, re.I) is None:
-			reply = nick + ": Have you ever considered not being such a fucking idiot? Use 'h' for heads and 't' for tails."
+			reply = nick + ": Use 'h' for heads and 't' for tails."
 			irc.sendMsg(reply, gchan)
 			return
 			
@@ -598,31 +598,31 @@ class bettor:
 	def betVideoPoker(nick, wordlist, wordlistlen, betobjs, deckofcards):
 		# %vp requires two arguments: 1) "bet" or "hold," and 2) a number for the wagers/holds.
 		if wordlistlen < 3:
-			reply = nick + ": Try using the correct number of arguments, dipshit."
+			reply = nick + ": The video poker command takes two arguments."
 			irc.sendMsg(reply, gchan)
 			return
 		
 		# the first argument must be "bet" or "hold".
 		if re.match("^b$|^h$", wordlist[1], re.I) is None:
-			reply = nick + ": Your idiocy knows no bounds. The first argument must be 'b' to bet a new hand, or 'h' to hold card in a current hand."
+			reply = nick + ": The first argument must be 'b' to bet a new hand, or 'h' to hold card in a current hand."
 			irc.sendMsg(reply, gchan)
 			return
 		
 		# the first argument must correspond to the correct user state.
 		userobj = bettor.getBettor(nick, betobjs, bankrolls_path)
 		if wordlist[1] == "b" and userobj.vpstate != "idle":
-			reply = nick + ": You've already got a hand in progress. Stop being a fucking idiot for two fucking seconds, finish the hand you're playing, and then deal a new hand."
+			reply = nick + ": You've already got a hand in progress. You must finish the hand you're playing before dealing a new hand."
 			irc.sendMsg(reply, gchan)
 			return
 		elif wordlist[1] == "h" and userobj.vpstate != "waiting_for_holds":
-			reply = nick + ": Hmm here's a surprise: you don't have a hand in progress. What's not a surprise is that you're fucking stupid."
+			reply = nick + ": You don't have a hand in progress."
 			irc.sendMsg(reply, gchan)
 			return
 
 		# the second argument must be a number
 		number = wordlist[2].replace(",", "").replace(".", "")
 		if number.isnumeric() == False:
-			reply = nick + ": Okay so there are these things called numbers, and your second argument must be one. Also there are these things called idiots, and you must definitely be one."
+			reply = nick + ": The second argument must be a positive real number."
 			irc.sendMsg(reply, gchan)
 			return
 
@@ -646,7 +646,7 @@ class bettor:
 		elif wordlist[1] == "h":
 			# the user can only hold cards 1-5 (or 0 to hold none).
 			if re.match("^[1-5]{1,5}$|^0$", wordlist[2]) is None:
-				reply = nick + ": To hold cards 1-5, use numbers 1-5. To hold no cards, use 0. To keep being a goddamn idiot, do nothing."
+				reply = nick + ": To hold cards 1-5, use numbers 1-5. To hold no cards, use 0."
 				irc.sendMsg(reply, gchan)
 				return
 
@@ -697,12 +697,6 @@ def main():
 		".reset" : "bettor.resetBalance(nick, ident, adminident, wordlist, betobjs)",
 		".flip" : "bettor.betFlips(nick, wordlistlen, wordlist, betobjs)",
 		".vp" : "bettor.betVideoPoker(nick, wordlist, wordlistlen, betobjs, deckofcards)",
-		"%reup" : "bettor.stakeMe(nick, betobjs, bankrolls_path)",
-		"%bal" : "bettor.getBalance(nick, wordlistlen, wordlist, betobjs, bankrolls_path)",
-		"%setbal" : "bettor.setBalance(nick, ident, adminident, wordlist, betobjs)",
-		"%reset" : "bettor.resetBalance(nick, ident, adminident, wordlist, betobjs)",
-		"%flip" : "bettor.betFlips(nick, wordlistlen, wordlist, betobjs)",
-		"%vp" : "bettor.betVideoPoker(nick, wordlist, wordlistlen, betobjs, deckofcards)",
 	}
 	chanfcn_dict = {
 		".spaghetti" : "chanfcn.quoteSpaghetti()",
@@ -710,11 +704,6 @@ def main():
 		".ask" : "chanfcn.askUser(nick, log_path, wordlist, wordlistlen)",
 		".wa" : "chanfcn.wolframAlpha(wordlistlen, message, wolfram_api_key)",
 		".timer" : "threading.Thread(target=chanfcn.countdown).start()",
-		"%spaghetti" : "chanfcn.quoteSpaghetti()",
-		"%top5" : "chanfcn.top5(nick, log_path, wordlistlen, message)",
-		"%ask" : "chanfcn.askUser(nick, log_path, wordlist, wordlistlen)",
-		"%wa" : "chanfcn.wolframAlpha(wordlistlen, message, wolfram_api_key)",
-		"%timer" : "threading.Thread(target=chanfcn.countdown).start()",
 	}
 	
 	# we don't want to generate a list of keys each time we get a message from the server, so let's store them now.
