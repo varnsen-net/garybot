@@ -637,7 +637,6 @@ class bettor:
 			cardlist = deckofcards.sample(15).reset_index(drop=True)
 			userobj.vphand = cardlist
 			userobj.vpbet = float(bet)
-			userobj.balance = userobj.balance - float(bet)
 			userobj.vpstate = "waiting_for_holds"
 			flopstring = bettor.makeStringOfCards(cardlist)
 			reply = nick + ": " + flopstring
@@ -657,7 +656,7 @@ class bettor:
 			userholdlist = wordlist[2]
 			cardlist = bettor.redrawCards(cardlist, userholdlist)
 			handclass, handmultiplier = bettor.getPokerPayout(cardlist)
-			payout = userobj.vpbet * handmultiplier
+			payout = userobj.vpbet * (handmultiplier - 1)
 			
 			# update money stats.
 			bettor.aftermath(userobj.vpbet, payout, userobj, bankobj)
@@ -673,7 +672,7 @@ class bettor:
 			# send end-state info to user.
 			flopstring = bettor.makeStringOfCards(cardlist)
 			userbalance = "${:,.2f}".format(userobj.balance)
-			payout = "${:,.2f}".format(payout)
+			payout = "${:,.2f}".format(payout + userobj.vpbet)
 			reply = nick + ": " + flopstring + " | " + handclass + " | This pays 03" + payout + " (" + str(handmultiplier) + "x multiplier). Your new balance is 03" + userbalance + "."
 			irc.sendMsg(reply, gchan)
 			
