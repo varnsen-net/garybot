@@ -383,7 +383,7 @@ class bettor:
 			if object.name.lower() == nick.lower():
 				userobj = object
 		if userobj is None:
-			userobj = bettor(nick, 6900.00)
+			userobj = bettor(nick, 10000.00)
 			betobjs.append(userobj)
 			bettor.saveBettors(bankrolls_path, betobjs)
 			return userobj
@@ -411,7 +411,7 @@ class bettor:
 	def stakeMe(nick, betobjs, bankrolls_path):
 	# users can reset their balances to $6,900.00 at any time.
 		userobj = bettor.getBettor(nick, betobjs, bankrolls_path)
-		userobj.balance = 6900.00
+		userobj.balance = 10000.00
 		balance = "${:,.2f}".format(userobj.balance)
 		reply = nick + ": If you are making money you are losing it — your balance is now 03" + balance
 		irc.sendMsg(reply, gchan)
@@ -711,7 +711,7 @@ def main():
 	chanfcn_keys = chanfcn_dict.keys()
 	
 	# if you don't already have a list of bettor objects saved, you can replace the "with open" bit with the following line:
-	# betobjs = [bettor("Bank", 10**7), bettor("dummy", 6900.00)]
+	# betobjs = [bettor("Bank", 10**7), bettor("dummy", 10000.00)]
 	with open(bankrolls_path, "r+b") as rolls:
 		betobjs = pickle.load(rolls)
 	
