@@ -22,6 +22,25 @@ _ODDS_API_KEY = os.getenv('ODDS_API_KEY')
 _OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 
+# helpers
+def _send_each(func):
+    """Decorator to apply a function to each youtube or twitter id fetched from
+    a user message."""
+    def wrapper(ids):
+        """Fetch stats from the youtube or twitter api for each id given.
+
+        :param list[str] ids: A list of ids to fetch stats for.
+        :returns: None
+        :rtype: None
+        """
+        for id in ids:
+            stats = func(id)
+            comms.send_message(stats)
+        return 
+    return wrapper
+
+
+# primary functions
 def imagine_without_iron(message):
     """Randomize the case of each letter of the user's message.
     
@@ -40,24 +59,7 @@ def reason_will_prevail() -> None:
     return 
 
 
-def for_each_url(func):
-    """Decorator to apply a function to each youtube or twitter id fetched from
-    a user message."""
-    def wrapper(ids):
-        """Fetch stats from the youtube or twitter api for each id given.
-
-        :param list[str] ids: A list of ids to fetch stats for.
-        :returns: None
-        :rtype: None
-        """
-        for id in ids:
-            stats = func(id)
-            comms.send_message(stats)
-        return 
-    return wrapper
-
-
-@for_each_url
+@_send_each
 def fetch_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
     """Fetches stats for a youtube video from googleapis.
     
@@ -92,7 +94,7 @@ def fetch_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
     return response
 
 
-@for_each_url
+@_send_each
 def fetch_tweet(tweet_id, twitter_key=_TWITTER_KEY,
                 twitter_secret=_TWITTER_SECRET,
                 twitter_access_token=_TWITTER_ACCESS_TOKEN,
