@@ -121,14 +121,3 @@ def fetch_tweet(tweet_id, twitter_key=_TWITTER_KEY,
     return response
 
 
-# def autoResponses(msg_obj, pyrc_obj):
-	# msglower = msg_obj.message.lower()
-	# responses = [
-		# imagineWithoutIron(msglower),
-		# reasonWillPrevail(msglower),
-		# getYouTubeStats(msg_obj.word_list, youtube_api_key),
-		# getTweet(msg_obj.message, twitter_key, twitter_secret, twitter_access_token, twitter_token_secret),
-	# ]
-	# [pyrc_obj.sendMsg(r, pyrc_obj.channel) for r in responses if r is not None]
-
-

@@ -47,7 +47,6 @@ def handler(nick, message, word_list):
     """
     trigger = word_list[0]
 
-    # TODO compile regexes at top of module
     if IMAGINE_REGEX.search(message) is not None:
         run(autor.imagine_without_iron, message)
 

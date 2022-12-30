@@ -41,21 +41,6 @@ def main():
             parsed = [ident, nick, target, message, '', timestamp]
             logger.log_msg(nick, parsed)
             handler.handler(nick, message, word_list)
-            # try:
-                # # auto-replies
-                # autoreplies.autoResponses(msg, irc)
-
-                # # arb replies
-                # if msg.message.startswith(irc.botnick):
-                    # threading.Thread(target=irc.runAndSend, args=(chanfcn_dict['.arb'], msg, irc)).start()
-
-                # # call channel-specific functions
-                # trigger = msg.word_list[0]
-                # if trigger in chanfcn_keys:
-                    # threading.Thread(target=irc.runAndSend, args=(chanfcn_dict[trigger], msg, irc)).start()
-            # except:
-                # irc.logError()
-                # irc.sendMsg("gary, there's been an error.", irc.adminnick)
 
 
 main()
