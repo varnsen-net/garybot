@@ -22,12 +22,6 @@ _ODDS_API_KEY = os.getenv('ODDS_API_KEY')
 _OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 
-# regular expressions
-YOUTU_DOTBE_REGEX = re.compile(r"youtu\.be/([\w\d]{11})")
-YOUTUBE_DOTCOM_REGEX = re.compile(r"youtube\.com/watch\?v=([\w\d]{11})")
-TWITTER_REGEX = re.compile(r"twitter\.com/\w+/status/(\d+)")
-
-
 def imagine_without_iron(message):
     """Randomize the case of each letter of the user's message.
     
@@ -46,26 +40,25 @@ def reason_will_prevail() -> None:
     return 
 
 
-def find_youtube_ids(message, dotbe_regex=YOUTU_DOTBE_REGEX,
-                     dotcom_regex=YOUTUBE_DOTCOM_REGEX):
-    """Search the user's message for valid youtube urls using the compiled
-    regexes.
-    
-    :param str message: The user's message.
-    :param Pattern[str] dotbe_regex: The compiled regex to match youtube.be urls.
-    :param Pattern[str] dotcom_regex: The compiled regex to match youtube.com urls.
-    :returns: A list of youtube video ids.
-    :rtype: list[str]
-    """
-    video_ids = []
-    if (dotbe_matches := dotbe_regex.findall(message)):
-        video_ids.extend(dotbe_matches)
-    if (dotcom_matches := dotcom_regex.findall(message)):
-        video_ids.extend(dotcom_matches)
-    return video_ids
+def for_each_url(func):
+    """Decorator to apply a function to each youtube or twitter id fetched from
+    a user message."""
+    def wrapper(ids):
+        """Fetch stats from the youtube or twitter api for each id given.
+
+        :param list[str] ids: A list of ids to fetch stats for.
+        :returns: None
+        :rtype: None
+        """
+        for id in ids:
+            stats = func(id)
+            comms.send_message(stats)
+        return 
+    return wrapper
 
 
-def get_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
+@for_each_url
+def fetch_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
     """Fetches stats for a youtube video from googleapis.
     
     :param str video_id: The youtube video id to fetch stats for.
@@ -99,35 +92,7 @@ def get_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
     return response
 
 
-def send_youtube_stats(video_ids):
-    """Fetch stats from the youtube api for each video id and send it to the
-    channel.
-
-    :param list[str] video_ids: A list of youtube video ids.
-    :returns: None
-    :rtype: None
-    """
-    for video_id in video_ids:
-        stats = get_youtube_stats(video_id)
-        comms.send_message(stats)
-    return
-
-
-def find_tweet_ids(message, twitter_regex=TWITTER_REGEX):
-    """Search the user's message for valid twitter urls using the compiled
-    regex.
-    
-    :param str message: The user's message.
-    :param Pattern[str] twitter_regex: The compiled regex to match twitter urls.
-    :returns: A list of tweet ids.
-    :rtype: list[str]
-    """
-    tweet_ids = []
-    if (matches := twitter_regex.findall(message)):
-        tweet_ids.extend(matches)
-    return tweet_ids
-
-
+@for_each_url
 def fetch_tweet(tweet_id, twitter_key=_TWITTER_KEY,
                 twitter_secret=_TWITTER_SECRET,
                 twitter_access_token=_TWITTER_ACCESS_TOKEN,
@@ -154,20 +119,6 @@ def fetch_tweet(tweet_id, twitter_key=_TWITTER_KEY,
     date = f"14{str(status.created_at)[:10]}"
     response = " | ".join([header, date, name, text])
     return response
-
-
-def send_tweet_stats(tweet_ids):
-    """Fetch tweets from the twitter api for each tweet id and send it to the
-    channel.
-
-    :param list[str] tweet_ids: A list of tweet ids.
-    :returns: None
-    :rtype: None
-    """
-    for tweet_id in tweet_ids:
-        tweet = fetch_tweet(tweet_id)
-        comms.send_message(tweet)
-    return
 
 
 # def autoResponses(msg_obj, pyrc_obj):
