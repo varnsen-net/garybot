@@ -49,18 +49,3 @@ def parse(raw_msg:str) -> list[str]:
     return ident, nick, target, message, command, word_count, word_list 
 
 
-if __name__ == "__main__":
-    raw = [
-        ":borja!~borja@polaris.cs.uchicago.edu PRIVMSG #cmsc23300 :Hello everybody",
-        ":doctor!doctor@baz.example.org PRIVMSG rory :Hey Rory...",
-        ":baz.example.org PRIVMSG rory :Hey Rory...",
-        ":doctor!doctor@baz.example.org QUIT :Done for the DAY leaving",
-        "PING 123.456.78.9",
-    ]
-    for raw_msg in raw:
-        print(raw_msg)
-        prefix, command, target, message, nick, ident, word_count = parse(raw_msg)
-        print(f"prefix: {prefix}\ncommand: {command}\ntarget: {target}\nmessage: {message}")
-        print(f"nick: {nick}\nident: {ident}")
-        print(f"word_count: {word_count}\n")
-

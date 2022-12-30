@@ -1,20 +1,31 @@
-from os import getcwd
+import os
 import re
 import random
 import requests
 import isodate
-from urllib.parse import urlparse, parse_qs, urljoin
 import tweepy
 import html
-import configparser
-from typing import Pattern
 
+
+# local module
 import pyrc.comms as comms
-import pyrc.constants as const
 
 
-# connection config
-kconf = const.irc_config['API_keys']
+# API keys 
+_YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+_TWITTER_KEY = os.getenv('TWITTER_KEY')
+_TWITTER_SECRET = os.getenv('TWITTER_SECRET')
+_TWITTER_ACCESS_TOKEN = os.getenv('TWITTER_ACCESS_TOKEN')
+_TWITTER_TOKEN_SECRET = os.getenv('TWITTER_TOKEN_SECRET')
+_WOLFRAM_API_KEY = os.getenv('WOLFRAM_API_KEY')
+_ODDS_API_KEY = os.getenv('ODDS_API_KEY')
+_OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+
+# regular expressions
+YOUTU_DOTBE_REGEX = re.compile(r"youtu\.be/([\w\d]{11})")
+YOUTUBE_DOTCOM_REGEX = re.compile(r"youtube\.com/watch\?v=([\w\d]{11})")
+TWITTER_REGEX = re.compile(r"twitter\.com/\w+/status/(\d+)")
 
 
 def imagine_without_iron(message):
@@ -35,10 +46,10 @@ def reason_will_prevail() -> None:
     return 
 
 
-def find_youtube_ids(message, dotbe_regex=const.YOUTU_DOTBE_REGEX,
-                     dotcom_regex=const.YOUTUBE_DOTCOM_REGEX):
+def find_youtube_ids(message, dotbe_regex=YOUTU_DOTBE_REGEX,
+                     dotcom_regex=YOUTUBE_DOTCOM_REGEX):
     """Search the user's message for valid youtube urls using the compiled
-    regexes locacted in constants.py.
+    regexes.
     
     :param str message: The user's message.
     :param Pattern[str] dotbe_regex: The compiled regex to match youtube.be urls.
@@ -54,11 +65,11 @@ def find_youtube_ids(message, dotbe_regex=const.YOUTU_DOTBE_REGEX,
     return video_ids
 
 
-def get_youtube_stats(video_id, api_key=kconf['youtube_api_key']):
+def get_youtube_stats(video_id, api_key=_YOUTUBE_API_KEY):
     """Fetches stats for a youtube video from googleapis.
     
     :param str video_id: The youtube video id to fetch stats for.
-    :param str api_key: The youtube api key fetched from config.ini.
+    :param str api_key: The youtube api key.
     :returns: A string containing stats on the youtube video.
     :rtype: str
     """
@@ -102,9 +113,9 @@ def send_youtube_stats(video_ids):
     return
 
 
-def find_tweet_ids(message, twitter_regex=const.TWITTER_REGEX):
+def find_tweet_ids(message, twitter_regex=TWITTER_REGEX):
     """Search the user's message for valid twitter urls using the compiled
-    regexes locacted in constants.py.
+    regex.
     
     :param str message: The user's message.
     :param Pattern[str] twitter_regex: The compiled regex to match twitter urls.
@@ -117,17 +128,17 @@ def find_tweet_ids(message, twitter_regex=const.TWITTER_REGEX):
     return tweet_ids
 
 
-def fetch_tweet(tweet_id, twitter_key=kconf['twitter_key'],
-                twitter_secret=kconf['twitter_secret'],
-                twitter_access_token=kconf['twitter_access_token'],
-                twitter_token_secret=kconf['twitter_token_secret']):
+def fetch_tweet(tweet_id, twitter_key=_TWITTER_KEY,
+                twitter_secret=_TWITTER_SECRET,
+                twitter_access_token=_TWITTER_ACCESS_TOKEN,
+                twitter_token_secret=_TWITTER_TOKEN_SECRET):
     """Fetches a tweet from the twitter api.
     
     :param str tweet_id: The id of the tweet to fetch.
-    :param str twitter_key: The twitter api key fetched from config.ini.
-    :param str twitter_secret: The twitter api secret fetched from config.ini.
-    :param str twitter_access_token: The twitter api access token fetched from config.ini.
-    :param str twitter_token_secret: The twitter api token secret fetched from config.ini.
+    :param str twitter_key: The twitter api key.
+    :param str twitter_secret: The twitter api secret.
+    :param str twitter_access_token: The twitter api access token.
+    :param str twitter_token_secret: The twitter api token secret.
     :returns: A string containing the tweet.
     :rtype: str
     """

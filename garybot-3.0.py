@@ -1,11 +1,9 @@
 #!/usr/bin/python3
-from os import getcwd
-from random import randint
 import time
-import threading
-import configparser
-import socket
-import ssl
+import dotenv
+
+# import environment variables
+dotenv.load_dotenv()
 
 # local modules 
 import pyrc.comms as comms
@@ -15,19 +13,6 @@ import pyrc.handler as handler
 
 
 def main():
-
-    # map triggers to the functions they should call
-    # chanfcn_dict = {
-        # ".spaghetti" : channelfcns.quoteSpaghetti,
-        # ".ask" : channelfcns.askUser,
-        # ".ph" : channelfcns.getRandPComment,
-        # ".h" : channelfcns.getHoroscope,
-        # ".arb" : arbitrary.ArbReply,
-        # ".wa" : channelfcns.wolframAlpha,
-        # ".apod" : channelfcns.getAPOD,
-        # ".sb" : sportsbook.Sportsbook,
-    # }
-    # chanfcn_keys = chanfcn_dict.keys()
 
     # make it dirty
     comms.connect_to_server()

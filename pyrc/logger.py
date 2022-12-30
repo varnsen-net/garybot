@@ -1,19 +1,20 @@
+import os
 import traceback
 import time
 import csv
-from pyrc.constants import irc_config
 
 
 # path config
-USER_LOGS_PATH = irc_config['Paths']['user_logs_path']
+_USER_LOGS_DIR = os.getenv("USER_LOGS_DIR")
 
 
 def log_msg(nick:str, parsed:list[str]) -> None:
     """Write channel message to file."""
-    with open(f"{USER_LOGS_PATH}/{nick}.csv", "a+", newline="", encoding="utf-8") as log_ref:
+    with open(f"{_USER_LOGS_DIR}/{nick}.csv", "a+", newline="", encoding="utf-8") as log_ref:
         logwriter = csv.writer(log_ref)
         logwriter.writerow(parsed)
     return
+
 
 def log_error() -> None:
     """Write error message to file."""

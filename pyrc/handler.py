@@ -1,6 +1,5 @@
 import re
 import threading
-import pyrc.comms as comms
 import pyrc.logger as logger
 import pyrc.channel_functions.autoreplies as autor 
 
@@ -29,6 +28,7 @@ def handler(nick:str, message:str, word_list:list[str]):
     """Determine which channel functions should be called."""
     trigger = word_list[0]
 
+    # TODO compile regexes at top of module
     if re.search(r"^imagine unironically", message) is not None:
         run(autor.imagine_without_iron, message)
 
