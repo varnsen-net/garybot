@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import time
 import dotenv
 
@@ -29,7 +28,7 @@ def main():
         comms.rejoin_if_kicked(raw_msg)
         comms.ping_pong(raw_msg)
 
-        # we are still connected. yay!
+        # we are still connected. hella fresh. 
         message_payload = parser.parse(raw_msg, timestamp)
 
         if comms.received_exit_code(message_payload):

@@ -1,3 +1,4 @@
+import os
 import re
 import threading
 
@@ -5,6 +6,7 @@ import threading
 import pyrc.logger as logger
 import pyrc.channel_functions.autoreplies as autoreplies
 import pyrc.channel_functions.sundries as sundries
+import pyrc.channel_functions.arbitrary as arb 
 
 # regular expressions
 IMAGINE_REGEX = re.compile(r"^imagine unironically")
@@ -21,6 +23,8 @@ TRIGGER_MAP = {'.spaghetti': sundries.dot_spaghetti,
                '.wa': sundries.dot_wolfram,
                '.apod': sundries.dot_apod,
                }
+
+_BOT_NICK = os.getenv('BOT_NICK')
 
 
 def run(irc_function:callable, *args, **kwargs) -> None:
@@ -61,5 +65,7 @@ def handler(message_payload):
     if trigger in TRIGGER_MAP.keys():
         run(TRIGGER_MAP[trigger], message_payload)
 
+    if trigger.startswith(_BOT_NICK):
+        run(arb.arb, message_payload, _BOT_NICK)
 
     return

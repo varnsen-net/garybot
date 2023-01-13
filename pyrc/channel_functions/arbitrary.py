@@ -1,48 +1,61 @@
-from os import getcwd
-import configparser
+import os
 import openai
+import dotenv
 
-config_path = getcwd() + '/config.ini'
-config = configparser.ConfigParser()
-config.read(config_path)
-botnick = config['connection']['botnick']
-openai.api_key = config['api_keys']['openai_api_key']
 
-def FetchOpenAIResponse(botnick, nick, user_msg):
-    prompt = f"this is a conversation with a hyper-intelligent machine mind called Arbitrary. it has strong opinions on EVERYTHING. it very occasionally uses emojis.\n\n{nick}: {user_msg}\nArbitrary:"
+# local modules
+import pyrc.comms as comms
+
+_OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+
+def fetch_openai_response(nick, query, bot_nick):
+    """
+    Fetches a response from OpenAI's ChatGPT API.
+
+    Because I am a better programmer than pardisfla, my bot's prompt can be
+    updated on the fly.
+
+    :param str nick: The nick of the user who sent the message.
+    :param str query: The message sent by the user.
+    :param str botnick: The nick of the bot.
+    :return: The response from OpenAI.
+    :rtype: openai.Completion
+    """
+    dotenv.dotenv_values('.prompt')
+    CHATGPT_PROMPT = dotenv.dotenv_values('.prompt')['CHATGPT_PROMPT']
+    prompt = CHATGPT_PROMPT.format(nick=nick, query=query, bot_nick=bot_nick)
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
         temperature=0.9,
-        max_tokens=69,
+        max_tokens=69, # lmao
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
     return response
 
-def ArbReply(msg_obj, pyrc_obj):
-    try:
-        user_msg = msg_obj.message.split(' ', 1)[1]
-    except IndexError:
-        user_msg = "i've got nothing to say."
-    response = FetchOpenAIResponse(pyrc_obj.botnick, msg_obj.nick, user_msg)
+
+def arb(message_payload, bot_nick):
+    """Responds to a message with a response from OpenAI's ChatGPT API.
+
+    :param dict message_payload: The message payload parsed from the raw message.
+    :return: None
+    :rtype: None
+    """
+    nick = message_payload['nick']
+    message = message_payload['message']
+    if message_payload['word_count'] == 1:
+        query = "i've got nothing to say."
+    else:
+        query = message.split(' ', 1)[1]
+    response = fetch_openai_response(nick, query, bot_nick)
     response = response.choices[0].text
     response = response.replace('\n', ' ').strip()
-    reply_text = f"{msg_obj.nick}: {response}"
-    return reply_text, pyrc_obj.channel
+    comms.send_message(response, nick)
+    return
 
-if __name__ == "__main__":
-    class testobj:
-        def __init__(self):
-            self.message = "buttebot: who are you?"
-            self.nick = 'gary'
-            self.channel = '#channel'
-            self.botnick = 'buttebot'
-
-    to = testobj()
-    reply = ArbReply(to, to)
-    print(reply[0])
     
 # old pipeline
 # ------------
