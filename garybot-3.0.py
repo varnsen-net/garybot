@@ -30,17 +30,14 @@ def main():
         comms.ping_pong(raw_msg)
 
         # we are still connected. yay!
-        ident, nick, target, message, command, word_count, word_list = parser.parse(raw_msg)
+        message_payload = parser.parse(raw_msg, timestamp)
 
-        if comms.received_exit_code(target, nick, message):
+        if comms.received_exit_code(message_payload):
             comms.disconnect()
             break
-        if comms.message_is_valid(target, word_count, nick, command):
-            # the string at [4] is empty because this script used to log the
-            # full param string, but that has since changed. TODO fix
-            parsed = [ident, nick, target, message, '', timestamp]
-            logger.log_msg(nick, parsed)
-            handler.handler(nick, message, word_list)
+        if comms.message_is_valid(message_payload):
+            logger.log_msg(message_payload)
+            handler.handler(message_payload)
 
 
 main()

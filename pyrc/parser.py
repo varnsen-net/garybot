@@ -40,12 +40,20 @@ def get_word_list(message:str, word_list:list[str]=None) -> list[str]:
     return word_list
 
 
-def parse(raw_msg:str) -> list[str]:
+def parse(raw_msg:str, timestamp:float) -> dict:
     """Use the parsing functions to parse the raw string into its components."""
     prefix, command, target, message = parse_raw_msg(raw_msg)
     nick, ident = parse_prefix(prefix)
     word_count = get_word_count(message)
     word_list = get_word_list(message)
-    return ident, nick, target, message, command, word_count, word_list 
+    message_payload = {'ident': ident,
+                       'nick': nick,
+                       'target': target,
+                       'message': message,
+                       'command': command,
+                       'word_count': word_count,
+                       'word_list': word_list,
+                       'timestamp': timestamp}
+    return message_payload
 
 

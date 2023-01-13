@@ -34,7 +34,7 @@ def send_bytes(message, sslsock=sslsock):
     return
         
 
-def send_message(message, target=_MAIN_CHANNEL, sslsock=sslsock):
+def send_message(message, nick=None, target=_MAIN_CHANNEL, sslsock=sslsock):
     """Encode string and send to channel or nick.
     
     :param str message: The message to send to the target.
@@ -43,6 +43,8 @@ def send_message(message, target=_MAIN_CHANNEL, sslsock=sslsock):
     :return: None
     :rtype: None
     """
+    if nick:
+        message = f"{nick}: {message}"
     send_bytes(f"PRIVMSG {target} :{message}")
     return
 
@@ -93,7 +95,7 @@ def disconnect(admin_nick=_ADMIN_NICK, sslsock=sslsock):
     :return: None
     :rtype: None
     """
-    send_message("Goodnight!", admin_nick)
+    send_message("Goodnight!", target=admin_nick)
     sslsock.shutdown(2)
     sslsock.close()
     return
@@ -142,13 +144,11 @@ def rejoin_if_kicked(raw_msg, main_channel=_MAIN_CHANNEL,
     return
 
 
-def received_exit_code(target, nick, message, bot_nick=_BOT_NICK,
+def received_exit_code(message_payload, bot_nick=_BOT_NICK,
                        admin_nick=_ADMIN_NICK, sslsock=sslsock):
     """Check if message is an exit code from the admin.
 
-    :param str target: The channel or nick the message was sent to.
-    :param str nick: The nick the message was sent from.
-    :param str message: The message received.
+    :param dict message_payload: The message payload parsed from the raw message.
     :param str bot_nick: The bot's nick.
     :param str admin_nick: The admin's nick.
     :param sslsocket sslsock: The SSL socket to send the message through.
@@ -156,32 +156,29 @@ def received_exit_code(target, nick, message, bot_nick=_BOT_NICK,
     :rtype: bool
     """
     exit_condition = (
-        target == bot_nick and
-        nick == admin_nick and
-        message == "goodnight"
+        message_payload['target'] == bot_nick and
+        message_payload['nick'] == admin_nick and
+        message_payload['message'] == "goodnight"
     )
     return exit_condition
 
 
-def message_is_valid(target, word_count, nick, command, ignore_list=_IGNORE_LIST,
+def message_is_valid(message_payload, ignore_list=_IGNORE_LIST,
                      main_channel=_MAIN_CHANNEL):
     """Check if message should be ignored or not.
 
-    :param str target: The channel or nick the message was sent to.
-    :param int word_count: The number of words in the message.
-    :param str nick: The nick the message was sent from.
-    :param str command: The IRC command preceeding the user message.
+    :param dict message_payload: The message payload parsed from the raw message.
     :param str ignore_list: The list of nicks to ignore.
     :param str main_channel: The main channel the bot lurks in.
     :return: True if the message should be considered, False otherwise.
     :rtype: bool
     """
     valid_msg_condition = (
-        nick != None and
-        nick not in ignore_list and
-        target == main_channel and 
-        command == 'PRIVMSG' and
-        word_count > 0
+        message_payload['nick'] != None and
+        message_payload['nick'] not in ignore_list and
+        message_payload['target'] == main_channel and 
+        message_payload['command'] == 'PRIVMSG' and
+        message_payload['word_count'] > 0
     )
     return valid_msg_condition
 
