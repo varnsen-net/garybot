@@ -5,6 +5,7 @@ import dotenv
 dotenv.load_dotenv()
 
 # local modules 
+import pyrc.startup
 import pyrc.comms as comms
 import pyrc.parser as parser
 import pyrc.logger as logger
