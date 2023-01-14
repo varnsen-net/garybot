@@ -5,7 +5,7 @@ import csv
 
 
 # path config
-_USER_LOGS_DIR = os.getenv("USER_LOGS_DIR")
+_USER_LOGS_DIR = os.path.join(os.path.dirname(__file__), '.', 'data', 'user-logs')
 
 
 def log_msg(message_payload:dict) -> None:

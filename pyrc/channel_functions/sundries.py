@@ -10,7 +10,7 @@ import pyrc.channel_functions.helpers as helpers
 import pyrc.channel_functions.exceptions as exceptions
 
 # global variables
-_USER_LOGS_DIR = os.getenv("USER_LOGS_DIR")
+_USER_LOGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'user-logs')
 _WOLFRAM_API_KEY = os.environ.get('WOLFRAM_API_KEY')
 _SPAGHETTI_LYRICS = (
     "Lose yourself in Mom's spaghetti. It's ready.",

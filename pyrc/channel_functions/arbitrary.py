@@ -22,8 +22,7 @@ def fetch_openai_response(nick, query, bot_nick):
     :return: The response from OpenAI.
     :rtype: openai.Completion
     """
-    dotenv.dotenv_values('.prompt')
-    CHATGPT_PROMPT = dotenv.dotenv_values('.prompt')['CHATGPT_PROMPT']
+    CHATGPT_PROMPT = dotenv.dotenv_values('./prompt')['CHATGPT_PROMPT']
     prompt = CHATGPT_PROMPT.format(nick=nick, query=query, bot_nick=bot_nick)
     response = openai.Completion.create(
         model="text-davinci-003",

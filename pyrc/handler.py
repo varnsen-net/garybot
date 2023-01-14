@@ -7,6 +7,7 @@ import pyrc.logger as logger
 import pyrc.channel_functions.autoreplies as autoreplies
 import pyrc.channel_functions.sundries as sundries
 import pyrc.channel_functions.arbitrary as arb 
+import pyrc.channel_functions.sportsbook as sportsbook
 
 # regular expressions
 IMAGINE_REGEX = re.compile(r"^imagine unironically")
@@ -22,6 +23,7 @@ TRIGGER_MAP = {'.spaghetti': sundries.dot_spaghetti,
                '.h': sundries.dot_horoscope,
                '.wa': sundries.dot_wolfram,
                '.apod': sundries.dot_apod,
+               '.sb': sportsbook.dot_sportsbook,
                }
 
 _BOT_NICK = os.getenv('BOT_NICK')
