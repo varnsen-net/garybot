@@ -244,7 +244,7 @@ def format_reply(game_info:tuple) -> str:
     """Formats the game info into a reply string."""
     away_abbrv = abbreviate_team_name(game_info[1])
     home_abbrv = abbreviate_team_name(game_info[4])
-    matchup = f"{game_info[1]} @ {game_info[4]}"
+    matchup = f"{game_info[1]} @ {game_info[4]}"
     moneyline = f"07Moneyline: {away_abbrv} {game_info[2]} {home_abbrv} {game_info[5]}"
     spread = f"09Spread: {away_abbrv} {game_info[3]} {home_abbrv} {game_info[6]}"
     tipoff = game_info[0]
