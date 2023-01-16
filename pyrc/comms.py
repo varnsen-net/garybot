@@ -121,6 +121,7 @@ def reconnect_if_disconnected(raw_msg:str, sslsock=sslsock) -> None:
     :rtype: None
     """
     if len(raw_msg) == 0:
+        sslsock.shutdown(2)
         time.sleep(2)
         connect_to_server(sslsock)
     return
