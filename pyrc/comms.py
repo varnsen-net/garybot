@@ -16,12 +16,17 @@ _EXIT_CODE = os.getenv('EXIT_CODE')
 _IGNORE_LIST = os.getenv('IGNORE_LIST')
 
 
-# create a socket
-socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sslsock = ssl.wrap_socket(socket)
+class irc_socket():
+    def __init__(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sslsock = ssl.wrap_socket(self.sock)
+        return
 
 
-def send_bytes(message, sslsock=sslsock):
+ircsock = irc_socket()
+
+
+def send_bytes(message, sslsock=ircsock.sslsock):
     """Encode string and send to server.
     
     :param str message: The message to send to the server.
@@ -34,7 +39,7 @@ def send_bytes(message, sslsock=sslsock):
     return
         
 
-def send_message(message, nick=None, target=_MAIN_CHANNEL, sslsock=sslsock):
+def send_message(message, nick=None, target=_MAIN_CHANNEL, sslsock=ircsock.sslsock):
     """Encode string and send to channel or nick.
     
     :param str message: The message to send to the target.
@@ -49,7 +54,7 @@ def send_message(message, nick=None, target=_MAIN_CHANNEL, sslsock=sslsock):
     return
 
 
-def ping_pong(raw_msg, sslsock=sslsock):
+def ping_pong(raw_msg, sslsock=ircsock.sslsock):
     """Send a pong reply when pinged by the server.
     
     :param str raw_msg: The raw message received from the server.
@@ -64,7 +69,7 @@ def ping_pong(raw_msg, sslsock=sslsock):
 
 
 def connect_to_server(server=_SERVER, sslport=_SSLPORT, bot_nick=_BOT_NICK,
-                      main_channel=_MAIN_CHANNEL, sslsock=sslsock):
+                      main_channel=_MAIN_CHANNEL, sslsock=ircsock.sslsock):
     """Connect to the IRC server.
 
     :param str server: The server to connect to.
@@ -87,7 +92,7 @@ def connect_to_server(server=_SERVER, sslport=_SSLPORT, bot_nick=_BOT_NICK,
     return
 
 
-def disconnect(admin_nick=_ADMIN_NICK, sslsock=sslsock):
+def disconnect(admin_nick=_ADMIN_NICK, sslsock=ircsock.sslsock):
     """Send a goodbye message to the admin and disconnects from the server.
 
     :param str admin_nick: The admin's nick.
@@ -101,7 +106,7 @@ def disconnect(admin_nick=_ADMIN_NICK, sslsock=sslsock):
     return
 
 
-def listen_for_msg(sslsock=sslsock):
+def listen_for_msg(sslsock=ircsock.sslsock):
     """Listen for messages from the IRC server.
     
     :param sslsocket sslsock: The SSL socket to listen on.
@@ -112,7 +117,7 @@ def listen_for_msg(sslsock=sslsock):
     return raw_msg
 
 
-def reconnect_if_disconnected(raw_msg:str, sslsock=sslsock) -> None:
+def reconnect_if_disconnected(raw_msg:str, ircsock=ircsock) -> None:
     """Reconnect to the server if the connection is lost.
 
     :param str raw_msg: The raw message received from the server.
@@ -121,14 +126,17 @@ def reconnect_if_disconnected(raw_msg:str, sslsock=sslsock) -> None:
     :rtype: None
     """
     if len(raw_msg) == 0:
-        sslsock.shutdown(2)
+        ircsock.sslsock.shutdown(2)
+        ircsock.sslsock.close()
         time.sleep(2)
-        connect_to_server(sslsock)
+        ircsock.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ircsock.sslsock = ssl.wrap_socket(self.sock)
+        connect_to_server()
     return
 
 
 def rejoin_if_kicked(raw_msg, main_channel=_MAIN_CHANNEL,
-                     bot_nick=_BOT_NICK, sslsock=sslsock):
+                     bot_nick=_BOT_NICK, sslsock=ircsock.sslsock):
     """Rejoin the channel if kicked.
 
     :param str raw_msg: The raw message received from the server.
@@ -146,7 +154,7 @@ def rejoin_if_kicked(raw_msg, main_channel=_MAIN_CHANNEL,
 
 
 def received_exit_code(message_payload, bot_nick=_BOT_NICK,
-                       admin_nick=_ADMIN_NICK, sslsock=sslsock):
+                       admin_nick=_ADMIN_NICK, sslsock=ircsock.sslsock):
     """Check if message is an exit code from the admin.
 
     :param dict message_payload: The message payload parsed from the raw message.
