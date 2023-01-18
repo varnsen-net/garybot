@@ -17,22 +17,31 @@ _IGNORE_LIST = os.getenv('IGNORE_LIST')
 
 
 class irc_socket():
+    """A class to handle the socket connection to the IRC server.
+
+    Attributes:
+        context: An SSL context object.
+        sock: A socket object.
+        sslsock: A socket object wrapped in an SSL context.
+    """
     def __init__(self):
+        """Initialize the socket connection to the IRC server."""
         self.context = ssl.create_default_context()
-        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock = socket.create_connection((_SERVER, _SSLPORT))
         self.sslsock = self.context.wrap_socket(self.sock, server_hostname=_SERVER)
         return
 
 
-ircsock = irc_socket()
+# socket connection
+_IRCSOCK = irc_socket()
 
 
-def send_bytes(message, ircsock=ircsock):
+# functions
+def send_bytes(message, ircsock=_IRCSOCK):
     """Encode string and send to server.
     
     :param str message: The message to send to the server.
-    :param sslsocket sslsock: The SSL socket to send the message through.
+    :param sslsocket ircsock: The SSL socket to send the message through.
     :return: None
     :rtype: None
     """
@@ -45,8 +54,8 @@ def send_message(message, nick=None, target=_MAIN_CHANNEL):
     """Encode string and send to channel or nick.
     
     :param str message: The message to send to the target.
+    :param str nick: The nick to send the message @.
     :param str target: The channel or nick to send the message to.
-    :param sslsocket sslsock: The SSL socket to send the message through.
     :return: None
     :rtype: None
     """
@@ -60,7 +69,6 @@ def ping_pong(raw_msg):
     """Send a pong reply when pinged by the server.
     
     :param str raw_msg: The raw message received from the server.
-    :param sslsocket sslsock: The SSL socket to send the message through.
     :return: None
     :rtype: None
     """
@@ -78,13 +86,10 @@ def connect_to_server(server=_SERVER, sslport=_SSLPORT, bot_nick=_BOT_NICK,
     :param str sslport: The port to connect to.
     :param str bot_nick: The bot's nick.
     :param str main_channel: The main channel to join.
-    :param sslsocket sslsock: The SSL socket to send the message through.
     :return: None
     :rtype: None
     """
-    # sslport = int(sslport)
     # TODO put this in a try loop that exits after n attempts to connect
-    # sslsock.connect((server, sslport))
     time.sleep(1)
     send_bytes(f"NICK {bot_nick}")
     time.sleep(1)
@@ -94,11 +99,11 @@ def connect_to_server(server=_SERVER, sslport=_SSLPORT, bot_nick=_BOT_NICK,
     return
 
 
-def disconnect(admin_nick=_ADMIN_NICK, ircsock=ircsock):
+def disconnect(admin_nick=_ADMIN_NICK, ircsock=_IRCSOCK):
     """Send a goodbye message to the admin and disconnects from the server.
 
     :param str admin_nick: The admin's nick.
-    :param sslsocket sslsock: The SSL socket to send the message through.
+    :param sslsocket ircsock: The SSL socket to disconnect.
     :return: None
     :rtype: None
     """
@@ -108,22 +113,22 @@ def disconnect(admin_nick=_ADMIN_NICK, ircsock=ircsock):
     return
 
 
-def listen_for_msg(ircsock=ircsock):
+def listen_for_msg(ircsock=_IRCSOCK):
     """Listen for messages from the IRC server.
     
-    :param sslsocket sslsock: The SSL socket to listen on.
-    :return: None
-    :rtype: None
+    :param sslsocket ircsock: The SSL socket to listen on.
+    :return: The raw message received from the server.
+    :rtype: str
     """
     raw_msg = ircsock.sslsock.recv(4096).decode("UTF-8",errors='replace').strip("\r\n")
     return raw_msg
 
 
-def reconnect_if_disconnected(raw_msg:str, ircsock=ircsock) -> None:
+def reconnect_if_disconnected(raw_msg:str, ircsock=_IRCSOCK) -> None:
     """Reconnect to the server if the connection is lost.
 
     :param str raw_msg: The raw message received from the server.
-    :param sslsocket sslsock: The SSL socket to send the message through.
+    :param sslsocket ircsock: The SSL socket currently in use.
     :return: None
     :rtype: None
     """
@@ -143,7 +148,6 @@ def rejoin_if_kicked(raw_msg, main_channel=_MAIN_CHANNEL,
     :param str raw_msg: The raw message received from the server.
     :param str main_channel: The main channel to join.
     :param str bot_nick: The bot's nick.
-    :param sslsocket sslsock: The SSL socket to send the message through.
     :return: None
     :rtype: None
     """
@@ -161,7 +165,6 @@ def received_exit_code(message_payload, bot_nick=_BOT_NICK,
     :param dict message_payload: The message payload parsed from the raw message.
     :param str bot_nick: The bot's nick.
     :param str admin_nick: The admin's nick.
-    :param sslsocket sslsock: The SSL socket to send the message through.
     :return: True if the bot gets a valid exit condition, False otherwise
     :rtype: bool
     """
