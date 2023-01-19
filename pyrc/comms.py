@@ -137,7 +137,7 @@ def reconnect_if_disconnected(raw_msg:str, ircsock=_IRCSOCK) -> None:
         ircsock.sslsock.close()
         time.sleep(2)
         ircsock.sock = socket.create_connection((_SERVER, _SSLPORT))
-        ircsock.sslsock = self.context.wrap_socket(self.sock)
+        ircsock.sslsock = ircsock.context.wrap_socket(ircsock.sock)
     return
 
 
