@@ -51,16 +51,16 @@ def handler(message_payload):
     message = message_payload['message']
 
     # auto-replies
-    if IMAGINE_REGEX.search(message) is not None:
+    if IMAGINE_REGEX.search(message):
         run(autoreplies.imagine_without_iron, message)
 
-    if REASON_REGEX.search(message) is not None:
+    if REASON_REGEX.search(message):
         run(autoreplies.reason_will_prevail)
 
-    if len((video_ids := YOUTUBE_REGEX.findall(message))) > 0:
+    if (video_ids := YOUTUBE_REGEX.findall(message)):
         run(autoreplies.fetch_youtube_stats, video_ids)
 
-    if len((tweet_ids := TWITTER_REGEX.findall(message))) > 0:
+    if (tweet_ids := TWITTER_REGEX.findall(message)):
         run(autoreplies.fetch_tweet, tweet_ids)
 
     # primary channel functions
