@@ -264,7 +264,7 @@ def dot_sportsbook(message_payload):
         game_odds = search_for_game_odds(word_list, league_odds)
         game_info = extract_game_info(game_odds)
         reply = format_reply(game_info)
-        comms.send_message(reply, nick)
+        comms.send_message(reply)
     except exceptions.InvalidQuery as e:
         comms.send_message(e, nick)
     except exceptions.BadStatusCode as e:

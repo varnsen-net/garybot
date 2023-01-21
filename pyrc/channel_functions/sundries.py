@@ -32,6 +32,18 @@ _SPAGHETTI_LYRICS = (
     "This may be the only Mom's spaghetti I got.",
     "Make me spaghetti as we move toward a new world order."
     )
+_ZODIAC_SIGNS = {'aquarius': '♒ 06Aquarius',
+                 'pisces': '♓ 04Pisces',
+                 'aries': '♈ 04Aries',
+                 'taurus': '♉ 04Taurus',
+                 'gemini': '♊ 07Gemini',
+                 'cancer': '♋ 07Cancer',
+                 'leo': '♌ 08Leo',
+                 'virgo': '♍ 03Virgo',
+                 'libra': '♎ 03Libra',
+                 'scorpio': '♏ 03Scorpio',
+                 'sagittarius': '♐ 02Sagittarius',
+                 'capricorn': '♑ 06Capricorn'}
 _CORRECT_SYNTAX = {'.ask': '.ask [nick]',
                    '.h'  : '.h [sign]',
                    '.wa' : '.wa [query]'}
@@ -75,7 +87,7 @@ def dot_ask(message_payload):
         clean_log = sample_log[~sample_log.str.match('[,.!%]')]
         selection = str(clean_log.sample(1).iloc[0])
         response = f"<{queried_nick}> {selection}"
-        comms.send_message(response, nick)
+        comms.send_message(response)
     except exceptions.MissingArgsError as e:
         comms.send_message(e, nick)
     except FileNotFoundError:
@@ -101,17 +113,18 @@ def dot_horoscope(message_payload):
         helpers.param_check(word_count,
                     required_params=1,
                     correct_syntax=_CORRECT_SYNTAX['.h'])
-        sign = word_list[1]
+        sign = word_list[1].lower()
         params = (
-            ('sign', sign.lower()),
+            ('sign', sign),
             ('day', 'today'),
         )
         resp = requests.post('https://aztro.sameerkumar.website/', params=params)
         horoscope = [f.replace('_', ' ').title() + ": " + resp.json()[f] for f in resp.json()]
         description = horoscope[2].split(' ', 1)[1]
         tidbits = ' | '.join(horoscope[3:8])
-        response = ' | '.join([description, tidbits])
-        comms.send_message(response, nick)
+        header = _ZODIAC_SIGNS[sign]
+        response = ' | '.join([header, description, tidbits])
+        comms.send_message(response)
     except exceptions.MissingArgsError as e:
         comms.send_message(e, nick)
     except IndexError:
