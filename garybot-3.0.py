@@ -35,7 +35,7 @@ def main():
         message_payload = parser.parse(raw_msg, timestamp)
 
         if client.received_exit_code(message_payload):
-            client.disconnect()
+            client.close_existing_socket()
             break
         if client.message_is_valid(message_payload):
             logger.log_msg(message_payload)
