@@ -70,7 +70,6 @@ class irc_client():
         :return: None
         :rtype: None
         """
-        # TODO create a function to close existing socket connections
         server = self.server
         sslport = self.sslport
         while True:
