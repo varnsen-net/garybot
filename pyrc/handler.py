@@ -26,8 +26,6 @@ TRIGGER_MAP = {'.spaghetti': sundries.dot_spaghetti,
                '.sb': sportsbook.dot_sportsbook,
                }
 
-_BOT_NICK = os.getenv('BOT_NICK')
-
 
 def run(irc_function:callable, *args, **kwargs) -> None:
     """Run a channel or game function and log any errors that occur."""
@@ -40,7 +38,7 @@ def run(irc_function:callable, *args, **kwargs) -> None:
     return
 
 
-def handler(message_payload):
+def handler(message_payload, irc_client):
     """Determine which channel functions should be called.
     
     :param dict message_payload: The message payload parsed from the raw message.
@@ -52,22 +50,22 @@ def handler(message_payload):
 
     # auto-replies
     if IMAGINE_REGEX.search(message):
-        run(autoreplies.imagine_without_iron, message)
+        run(autoreplies.imagine_without_iron, message, irc_client)
 
     if REASON_REGEX.search(message):
         run(autoreplies.reason_will_prevail)
 
     if (video_ids := YOUTUBE_REGEX.findall(message)):
-        run(autoreplies.fetch_youtube_stats, video_ids)
+        run(autoreplies.fetch_youtube_stats, video_ids, irc_client)
 
     if (tweet_ids := TWITTER_REGEX.findall(message)):
-        run(autoreplies.fetch_tweet, tweet_ids)
+        run(autoreplies.fetch_tweet, tweet_ids, irc_client)
 
     # primary channel functions
     if trigger in TRIGGER_MAP.keys():
-        run(TRIGGER_MAP[trigger], message_payload)
+        run(TRIGGER_MAP[trigger], message_payload, irc_client)
 
-    if trigger.startswith(_BOT_NICK):
-        run(arb.arb, message_payload, _BOT_NICK)
+    if trigger.startswith(irc_client.bot_nick):
+        run(arb.arb, message_payload, irc_client)
 
     return

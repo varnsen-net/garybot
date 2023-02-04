@@ -4,197 +4,209 @@ import time
 import socket
 
 
-# connection environment variables
-_SERVER = os.getenv('SERVER')
-_SSLPORT = os.getenv('SSLPORT')
-_BOT_NICK = os.getenv('BOT_NICK')
-_ADMIN_NICK = os.getenv('ADMIN_NICK')
-_ADMIN_IDENT = os.getenv('ADMIN_IDENT')
-_MAIN_CHANNEL = os.getenv('MAIN_CHANNEL')
-_GAME_CHANNEL = os.getenv('GAME_CHANNEL')
-_EXIT_CODE = os.getenv('EXIT_CODE')
-_IGNORE_LIST = os.getenv('IGNORE_LIST')
+class irc_client():
+    """Creates a client object for communicating with an IRC server.
 
-
-class irc_socket():
-    """A class to handle the socket connection to the IRC server.
-
-    Attributes:
-        context: An SSL context object.
-        sock: A socket object.
-        sslsock: A socket object wrapped in an SSL context.
+    Attributes
+    ----------
+    context : ssl.SSLContext
+        SSL default context.
+    server : str
+        The server to connect to.
+    sslport : int
+        The port to connect through.
+    admin_nick : str
+        The bot admin's IRC nick.
+    admin_ident : str
+        The bot admin's IRC ident.
+    exit_code : str
+        The exit code to send to the bot to shut it down.
+    ignore_list : list
+        A list of nicks to ignore.
+    bot_nick : str
+        The bot's IRC nick.
+    main_channel : str
+        The main channel to join.
+    game_channel : str
+        The game channel to join.
+    sock : socket.socket
+        The socket connection.
+    sslsock : ssl.SSLSocket
+        The SSL-wrapped socket.
     """
     def __init__(self):
-        """Initialize the socket connection to the IRC server."""
+        """Initialize the client."""
         self.context = ssl.create_default_context()
-        self.sock = socket.create_connection((_SERVER, _SSLPORT))
-        self.sslsock = self.context.wrap_socket(self.sock, server_hostname=_SERVER)
+        self.server = os.getenv('SERVER')
+        self.sslport = os.getenv('SSLPORT')
+        self.admin_nick = os.getenv('ADMIN_NICK')
+        self.admin_ident = os.getenv('ADMIN_IDENT')
+        self.exit_code = os.getenv('EXIT_CODE')
+        self.ignore_list = os.getenv('IGNORE_LIST')
+        self.bot_nick = os.getenv('BOT_NICK')
+        self.main_channel = os.getenv('MAIN_CHANNEL')
+        self.game_channel = os.getenv('GAME_CHANNEL')
+        return
+
+    def connect_to_server(self):
+        """Connect to the IRC server."""
+        server = self.server
+        sslport = self.sslport
+        for i in range(5):
+            try:
+                print(f"{i} Connecting to {server} on port {sslport}...")
+                self.sock = socket.create_connection((server, sslport))
+                self.sslsock = self.context.wrap_socket(self.sock,
+                                                        server_hostname=server)
+                print(f"Connected on attempt {i}.")
+                break
+            except:
+                time.sleep(5)
         return
 
 
-# socket connection
-_IRCSOCK = irc_socket()
-
-
-# functions
-def send_bytes(message, ircsock=_IRCSOCK):
-    """Encode string and send to server.
-    
-    :param str message: The message to send to the server.
-    :param sslsocket ircsock: The SSL socket to send the message through.
-    :return: None
-    :rtype: None
-    """
-    b = bytes(f"{message}\r\n", "UTF-8")
-    ircsock.sslsock.send(b)
-    return
+    def send_bytes(self, message):
+        """Encode string and send to server.
+        
+        :param str message: The message to send to the server.
+        :return: None
+        :rtype: None
+        """
+        b = bytes(f"{message}\r\n", "UTF-8")
+        self.sslsock.send(b)
+        return
         
 
-def send_message(message, nick=None, target=_MAIN_CHANNEL):
-    """Encode string and send to channel or nick.
-    
-    :param str message: The message to send to the target.
-    :param str nick: The nick to send the message @.
-    :param str target: The channel or nick to send the message to.
-    :return: None
-    :rtype: None
-    """
-    if nick:
-        message = f"{nick}: {message}"
-    send_bytes(f"PRIVMSG {target} :{message}")
-    return
+    def send_message(self, message, nick=None, target=None):
+        """Send a message to a channel or nick.
+        
+        :param str message: The message to send to the target.
+        :param str nick: The nick to send the message @.
+        :param str target: The channel or nick to send the message to.
+        :return: None
+        :rtype: None
+        """
+        if nick:
+            message = f"{nick}: {message}"
+        if not target:
+            target = self.main_channel
+        self.send_bytes(f"PRIVMSG {target} :{message}")
+        return
 
 
-def ping_pong(raw_msg):
-    """Send a pong reply when pinged by the server.
-    
-    :param str raw_msg: The raw message received from the server.
-    :return: None
-    :rtype: None
-    """
-    if raw_msg.startswith("PING"):
-        originating_server = raw_msg.split(' ', 1)[1]
-        send_bytes(f"PONG {originating_server}")
-    return
+    def ping_pong(self, raw_msg):
+        """Send a pong reply when pinged by the server.
+        
+        :param str raw_msg: The raw message received from the server.
+        :return: None
+        :rtype: None
+        """
+        if raw_msg.startswith("PING"):
+            originating_server = raw_msg.split(' ', 1)[1]
+            self.send_bytes(f"PONG {originating_server}")
+        return
 
 
-def connect_to_server(server=_SERVER, sslport=_SSLPORT, bot_nick=_BOT_NICK,
-                      main_channel=_MAIN_CHANNEL):
-    """Connect to the IRC server.
+    def join_channel(self):
+        """Register and join the main channel.
 
-    :param str server: The server to connect to.
-    :param str sslport: The port to connect to.
-    :param str bot_nick: The bot's nick.
-    :param str main_channel: The main channel to join.
-    :return: None
-    :rtype: None
-    """
-    # TODO put this in a try loop that exits after n attempts to connect
-    time.sleep(1)
-    send_bytes(f"NICK {bot_nick}")
-    time.sleep(1)
-    send_bytes(f"USER {bot_nick} 0 * :{bot_nick}")
-    time.sleep(1)
-    send_bytes(f"JOIN {main_channel}")
-    return
+        :return: None
+        :rtype: None
+        """
+        # time.sleep(1)
+        self.send_bytes(f"NICK {self.bot_nick}")
+        # time.sleep(1)
+        self.send_bytes(f"USER {self.bot_nick} 0 * :{self.bot_nick}")
+        # time.sleep(1)
+        self.send_bytes(f"JOIN {self.main_channel}")
+        return
 
 
-def disconnect(admin_nick=_ADMIN_NICK, ircsock=_IRCSOCK):
-    """Send a goodbye message to the admin and disconnects from the server.
+    def disconnect(self):
+        """Send a goodbye message to the admin and disconnect from the server.
 
-    :param str admin_nick: The admin's nick.
-    :param sslsocket ircsock: The SSL socket to disconnect.
-    :return: None
-    :rtype: None
-    """
-    send_message("Goodnight!", target=admin_nick)
-    ircsock.sslsock.shutdown(2)
-    ircsock.sslsock.close()
-    return
+        :return: None
+        :rtype: None
+        """
+        self.send_message("Goodnight!", target=self.admin_nick)
+        self.sslsock.shutdown(2)
+        self.sslsock.close()
+        return
 
 
-def listen_for_msg(ircsock=_IRCSOCK):
-    """Listen for messages from the IRC server.
-    
-    :param sslsocket ircsock: The SSL socket to listen on.
-    :return: The raw message received from the server.
-    :rtype: str
-    """
-    raw_msg = ircsock.sslsock.recv(4096).decode("UTF-8",errors='replace').strip("\r\n")
-    return raw_msg
+    def listen_for_msg(self):
+        """Listen for messages from the IRC server.
+        
+        :return: The raw message received from the server.
+        :rtype: str
+        """
+        raw_msg = self.sslsock.recv(4096)
+        raw_msg = raw_msg.decode("UTF-8",errors='replace').strip("\r\n")
+        return raw_msg
 
 
-def reconnect_if_disconnected(raw_msg:str, ircsock=_IRCSOCK) -> None:
-    """Reconnect to the server if the connection is lost.
+    def reconnect_if_disconnected(self, raw_msg):
+        """Reconnect to the server if the connection is lost.
 
-    :param str raw_msg: The raw message received from the server.
-    :param sslsocket ircsock: The SSL socket currently in use.
-    :return: None
-    :rtype: None
-    """
-    if len(raw_msg) == 0:
-        ircsock.sslsock.shutdown(2)
-        ircsock.sslsock.close()
-        time.sleep(2)
-        ircsock.sock = socket.create_connection((_SERVER, _SSLPORT))
-        ircsock.sslsock = ircsock.context.wrap_socket(ircsock.sock, server_hostname=_SERVER)
-        connect_to_server()
-    return
+        :param str raw_msg: The raw message received from the server.
+        :return: None
+        :rtype: None
+        """
+        if len(raw_msg) == 0:
+            self.sslsock.shutdown(2)
+            self.sslsock.close()
+            time.sleep(2)
+            self.connect_to_server()
+            self.join_channel()
+        return
 
 
-def rejoin_if_kicked(raw_msg, main_channel=_MAIN_CHANNEL,
-                     bot_nick=_BOT_NICK):
-    """Rejoin the channel if kicked.
+    def rejoin_if_kicked(self, raw_msg):
+        """Rejoin the channel if kicked.
 
-    :param str raw_msg: The raw message received from the server.
-    :param str main_channel: The main channel to join.
-    :param str bot_nick: The bot's nick.
-    :return: None
-    :rtype: None
-    """
-    if f"KICK {main_channel} {bot_nick} :" in raw_msg:
-        time.sleep(2)
-        send_bytes(f"JOIN {main_channel}")
-        send_message("rude")
-    return
+        :param str raw_msg: The raw message received from the server.
+        :return: None
+        :rtype: None
+        """
+        if raw_msg.startswith(f"KICK {self.main_channel} {self.bot_nick} :"):
+            time.sleep(2)
+            self.send_bytes(f"JOIN {self.main_channel}")
+            self.send_message("rude")
+        return
 
 
-def received_exit_code(message_payload, bot_nick=_BOT_NICK,
-                       admin_nick=_ADMIN_NICK):
-    """Check if message is an exit code from the admin.
+    def received_exit_code(self, message_payload):
+        """Check if message is an exit code from the admin.
 
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param str bot_nick: The bot's nick.
-    :param str admin_nick: The admin's nick.
-    :return: True if the bot gets a valid exit condition, False otherwise
-    :rtype: bool
-    """
-    exit_condition = (
-        message_payload['target'] == bot_nick and
-        message_payload['nick'] == admin_nick and
-        message_payload['message'] == "goodnight"
-    )
-    return exit_condition
+        :param dict message_payload: The message payload parsed from the raw
+            message.
+        :return: True if the bot gets a valid exit condition, False otherwise
+        :rtype: bool
+        """
+        exit_condition = (
+            message_payload['target'] == self.bot_nick and
+            message_payload['nick'] == self.admin_nick and
+            message_payload['message'] == "goodnight"
+        )
+        return exit_condition
 
 
-def message_is_valid(message_payload, ignore_list=_IGNORE_LIST,
-                     main_channel=_MAIN_CHANNEL):
-    """Check if message should be ignored or not.
+    def message_is_valid(self, message_payload):
+        """Check if message should be ignored or not.
 
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param str ignore_list: The list of nicks to ignore.
-    :param str main_channel: The main channel the bot lurks in.
-    :return: True if the message should be considered, False otherwise.
-    :rtype: bool
-    """
-    valid_msg_condition = (
-        message_payload['nick'] != None and
-        message_payload['nick'] not in ignore_list and
-        message_payload['target'] == main_channel and 
-        message_payload['command'] == 'PRIVMSG' and
-        message_payload['word_count'] > 0
-    )
-    return valid_msg_condition
+        :param dict message_payload: The message payload parsed from the raw
+            message.
+        :return: True if the message should be considered, False otherwise.
+        :rtype: bool
+        """
+        valid_msg_condition = (
+            message_payload['nick'] != None and
+            message_payload['nick'] not in self.ignore_list and
+            message_payload['target'] == self.main_channel and 
+            message_payload['command'] == 'PRIVMSG' and
+            message_payload['word_count'] > 0
+        )
+        return valid_msg_condition
 
 
 

@@ -80,7 +80,6 @@ def dot_ask(message_payload):
                 log, 
                 index_col=False,
                 usecols = [3],
-                # squeeze = True, #TODO squeeze has been deprecated
                 header = None,
             ).squeeze()
         sample_log = log.sample(69, replace=True).dropna()
