@@ -52,7 +52,7 @@ class irc_client():
 
     def close_existing_socket(self):
         """
-        Send a goodbye message to the admin and disconnect from the server.
+        Disconnect from the IRC server.
 
         :return: None
         :rtype: None
