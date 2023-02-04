@@ -52,16 +52,14 @@ class irc_client():
         """Connect to the IRC server."""
         server = self.server
         sslport = self.sslport
-        for i in range(5):
+        while True:
             try:
-                print(f"{i} Connecting to {server} on port {sslport}...")
                 self.sock = socket.create_connection((server, sslport))
                 self.sslsock = self.context.wrap_socket(self.sock,
                                                         server_hostname=server)
-                print(f"Connected on attempt {i}.")
                 break
-            except:
-                time.sleep(5)
+            except Exception:
+                time.sleep(6)
         return
 
 
