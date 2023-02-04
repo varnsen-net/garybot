@@ -4,26 +4,23 @@ import threading
 
 # local modules
 import pyrc.logger as logger
-import pyrc.channel_functions.autoreplies as autoreplies
-import pyrc.channel_functions.sundries as sundries
-import pyrc.channel_functions.arbitrary as arb 
-import pyrc.channel_functions.sportsbook as sportsbook
+import pyrc.channel_functions.functions as fun # these functions are FUN! :^)
 
 # regular expressions
 IMAGINE_REGEX = re.compile(r"^imagine unironically")
 REASON_REGEX = re.compile(r"\breason\b")
-dotbe = "youtu\.be/([\w\d]{11})"
-dotcom = "youtube\.com/watch\?v=([\w\d]{11})"
-YOUTUBE_REGEX = re.compile(fr"{dotbe}|{dotcom}")
+DOTBE = "youtu\.be/([\w\d]{11})"
+DOTCOM = "youtube\.com/watch\?v=([\w\d]{11})"
+YOUTUBE_REGEX = re.compile(fr"{DOTBE}|{DOTCOM}")
 TWITTER_REGEX = re.compile(r"twitter\.com/\w+/status/(\d+)")
 
 # map triggers to functions
-TRIGGER_MAP = {'.spaghetti': sundries.dot_spaghetti,
-               '.ask': sundries.dot_ask,
-               '.h': sundries.dot_horoscope,
-               '.wa': sundries.dot_wolfram,
-               '.apod': sundries.dot_apod,
-               '.sb': sportsbook.dot_sportsbook,
+TRIGGER_MAP = {'.spaghetti': fun.dot_spaghetti,
+               '.ask': fun.dot_ask,
+               '.h': fun.dot_horoscope,
+               '.wa': fun.dot_wolfram,
+               '.apod': fun.dot_apod,
+               # '.sb': fun.dot_sportsbook
                }
 
 
@@ -50,22 +47,24 @@ def handler(message_payload, irc_client):
 
     # auto-replies
     if IMAGINE_REGEX.search(message):
-        run(autoreplies.imagine_without_iron, message, irc_client)
+        run(fun.imagine_without_iron, message, irc_client)
 
     if REASON_REGEX.search(message):
-        run(autoreplies.reason_will_prevail)
+        run(fun.reason_will_prevail, irc_client)
 
     if (video_ids := YOUTUBE_REGEX.findall(message)):
-        run(autoreplies.fetch_youtube_stats, video_ids, irc_client)
+        for video_id in video_ids:
+            run(fun.fetch_youtube_stats, video_id, irc_client)
 
     if (tweet_ids := TWITTER_REGEX.findall(message)):
-        run(autoreplies.fetch_tweet, tweet_ids, irc_client)
+        for tweet_id in tweet_ids:
+            run(fun.fetch_tweet, tweet_id, irc_client)
 
     # primary channel functions
     if trigger in TRIGGER_MAP.keys():
         run(TRIGGER_MAP[trigger], message_payload, irc_client)
 
     if trigger.startswith(irc_client.bot_nick):
-        run(arb.arb, message_payload, irc_client)
+        run(fun.arb, message_payload, irc_client)
 
     return
