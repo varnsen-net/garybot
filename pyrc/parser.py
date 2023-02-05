@@ -1,13 +1,12 @@
 import re
 
+REGEX = re.compile(r":(\S+\!\S+@\S+) ([A-Z]+) (\S+) :(.+)")
 
 def parse_raw_msg(raw_msg:str, prefix:str=None, command:str=None,
                   target:str=None, message:str=None) -> list[str]:
     """Use a regex to split the raw IRC string into its prefix, command,
     target, and message."""
-    regex = r":(\S+\!\S+@\S+) ([A-Z]+) (\S+) :(.+)"
-    p = re.compile(regex)
-    matches = p.match(raw_msg)
+    matches = REGEX.match(raw_msg)
     if matches:
         prefix = matches.group(1) # group 0 is the full match
         command = matches.group(2)
