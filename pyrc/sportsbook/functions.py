@@ -1,10 +1,3 @@
-import os
-from datetime import datetime as dt
-from dateutil import tz
-from time import time
-import requests
-import json
-
 # local modules
 import pyrc.sportsbook.helpers as helpers
 import pyrc.sportsbook.exceptions as exceptions
