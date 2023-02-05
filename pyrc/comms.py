@@ -176,7 +176,7 @@ class irc_client():
         :return: None
         :rtype: None
         """
-        if raw_msg.startswith(f"KICK {self.main_channel} {self.bot_nick} :"):
+        if f" KICK {self.main_channel} {self.bot_nick} :" in raw_msg:
             time.sleep(2)
             self.send_bytes(f"JOIN {self.main_channel}")
             self.send_message("rude")
