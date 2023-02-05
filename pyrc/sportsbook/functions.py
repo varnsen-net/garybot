@@ -32,7 +32,7 @@ def fetch_league_odds_from_api(sport_key, bookmaker='unibet', odds_api_key=_ODDS
     odds_api_key : str
         API key for the Odds API — https://the-odds-api.com/
     bookmaker : str
-        Bookmaker to fetch odds from. Default is 'bovada'.
+        Bookmaker to fetch odds from. Default is Unibet.
         
     Returns
     -------
