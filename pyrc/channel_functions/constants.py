@@ -2,7 +2,6 @@ import os
 
 # Paths
 USER_LOGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'user-logs')
-ODDS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'odds')
 
 # Keys
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
@@ -11,7 +10,6 @@ TWITTER_SECRET = os.getenv('TWITTER_SECRET')
 TWITTER_ACCESS_TOKEN = os.getenv('TWITTER_ACCESS_TOKEN')
 TWITTER_TOKEN_SECRET = os.getenv('TWITTER_TOKEN_SECRET')
 WOLFRAM_API_KEY = os.getenv('WOLFRAM_API_KEY')
-ODDS_API_KEY = os.getenv('ODDS_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Misc
@@ -49,8 +47,3 @@ ZODIAC_SIGNS = {'aquarius': '♒ 06Aquarius',
 CORRECT_SYNTAX = {'.ask': '.ask [nick]',
                   '.h'  : '.h [sign]',
                   '.wa' : '.wa [query]'}
-SPORT_KEY_MAP = {'nfl' : 'americanfootball_nfl',
-                 'cfb' : 'americanfootball_ncaaf',
-                 'mlb' : 'baseball_mlb',
-                 'nhl' : 'icehockey_nhl',
-                 'nba' : 'basketball_nba'}

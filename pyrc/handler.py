@@ -5,6 +5,7 @@ import threading
 # local modules
 import pyrc.logger as logger
 import pyrc.channel_functions.functions as fun # these functions are FUN! :^)
+import pyrc.sportsbook.functions as sportsbook
 
 # regular expressions
 IMAGINE_REGEX = re.compile(r"^imagine unironically")
@@ -20,8 +21,7 @@ TRIGGER_MAP = {'.spaghetti': fun.dot_spaghetti,
                '.h': fun.dot_horoscope,
                '.wa': fun.dot_wolfram,
                '.apod': fun.dot_apod,
-               # '.sb': fun.dot_sportsbook
-               }
+               '.sb': sportsbook.dot_sportsbook}
 
 
 def run(irc_function:callable, *args, **kwargs) -> None:
