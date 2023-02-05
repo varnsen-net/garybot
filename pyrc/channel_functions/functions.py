@@ -243,4 +243,27 @@ def dot_apod(message_payload, irc_client):
     return
 
 
+def dot_arb(message_payload, irc_client):
+    """Responds to a message with a response from OpenAI's ChatGPT API.
+
+    :param dict message_payload: The message payload parsed from the raw message.
+    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :return: None
+    :rtype: None
+    """
+    nick = message_payload['nick']
+    message = message_payload['message']
+    word_count = message_payload['word_count']
+    bot_nick = irc_client.bot_nick
+    if word_count == 1:
+        query = "i've got nothing to say."
+    else:
+        query = message.split(' ', 1)[1]
+    response = helpers.fetch_openai_response(nick, query, bot_nick)
+    response = response.choices[0].text
+    response = response.replace('\n', ' ').strip()
+    irc_client.send_message(response, nick)
+    return
+
+    
 

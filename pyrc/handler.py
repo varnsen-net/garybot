@@ -65,6 +65,6 @@ def handler(message_payload, irc_client):
         run(TRIGGER_MAP[trigger], message_payload, irc_client)
 
     if trigger.startswith(irc_client.bot_nick):
-        run(fun.arb, message_payload, irc_client)
+        run(fun.dot_arb, message_payload, irc_client)
 
     return
