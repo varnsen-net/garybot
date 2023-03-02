@@ -32,9 +32,12 @@ def fetch_openai_response(nick, query, bot_nick):
     :return: The response from OpenAI.
     :rtype: openai.Completion
     """
+    CHATGPT_PROMPT = dotenv.dotenv_values('./prompt')['CHATGPT_PROMPT']
+    prompt = CHATGPT_PROMPT.format(nick=nick, bot_nick=bot_nick)
     response = openai.ChatCompletion.create(
         model = "gpt-3.5-turbo",
-        messages = [{"role": "user", "content": query}],
+        messages = [{"role": "system", "content": prompt},
+                    {"role": "user", "content": query},],
         temperature=0.8,
         max_tokens=69, # lmao
         frequency_penalty=0,
