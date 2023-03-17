@@ -35,7 +35,7 @@ def fetch_openai_response(nick, query, bot_nick):
     CHATGPT_PROMPT = dotenv.dotenv_values('./prompt')['CHATGPT_PROMPT']
     prompt = CHATGPT_PROMPT.format(nick=nick, bot_nick=bot_nick)
     response = openai.ChatCompletion.create(
-        model = "gpt-3.5-turbo",
+        model = "gpt-4",
         messages = [{"role": "system", "content": prompt},
                     {"role": "user", "content": query},],
         temperature=0.8,
