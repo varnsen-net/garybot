@@ -262,6 +262,7 @@ def dot_arb(message_payload, irc_client):
     response = helpers.fetch_openai_response(nick, query, bot_nick)
     response = response['choices'][0]['message']['content']
     response = response.replace('\n', ' ').strip()
+    response = response[::-1]
     irc_client.send_message(response, nick)
     return
 
