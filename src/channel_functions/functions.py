@@ -182,7 +182,6 @@ def dot_arb(message_payload, irc_client):
     nick = message_payload['nick']
     message = message_payload['message']
     word_count = message_payload['word_count']
-    bot_nick = irc_client.bot_nick
     with sqlite3.connect("./user_logs.db") as db:
         res = db.execute(
             f"""SELECT nick,message
@@ -207,7 +206,11 @@ def dot_arb(message_payload, irc_client):
             system_instruction=sys_msg),
         contents=f"<{nick}> {message}",
     )
-    irc_client.send_message(response.text, nick)
+    reply = (response.text
+             .strip('\n')
+             .replace('\n\n', ' ')
+             .replace('\n', ' '))
+    irc_client.send_message(reply, nick)
     return
 
     
