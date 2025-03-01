@@ -188,12 +188,13 @@ def dot_arb(message_payload, irc_client):
             FROM user_logs
             WHERE target = '{config.MAIN_CHANNEL}'
             ORDER BY timestamp DESC
-            LIMIT 1000;"""
+            LIMIT 500;"""
         ).fetchall()
     res.reverse()
     current_convo = "\n".join([f"<{r[0]}> {r[1]}"
                                for r in res])
-    sys_msg = config.SYS_MSG.format(current_convo=current_convo)
+    with open(config.PROJECT_WD / 'prompt', 'r') as f:
+        sys_msg = f.read().format(current_convo=current_convo)
     print(sys_msg)
     # if word_count == 1:
         # query = "i've got nothing to say."
