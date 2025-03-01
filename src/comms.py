@@ -3,6 +3,9 @@ import ssl
 import time
 import socket
 
+from src.logger import log_msg
+import src.config as config
+
 
 class irc_client():
     """
@@ -38,15 +41,15 @@ class irc_client():
     def __init__(self):
         """Initialize the client."""
         self.context = ssl.create_default_context()
-        self.server = os.getenv('SERVER')
-        self.sslport = os.getenv('SSLPORT')
-        self.admin_nick = os.getenv('ADMIN_NICK')
-        self.admin_ident = os.getenv('ADMIN_IDENT')
-        self.exit_code = os.getenv('EXIT_CODE')
-        self.ignore_list = os.getenv('IGNORE_LIST')
-        self.bot_nick = os.getenv('BOT_NICK')
-        self.main_channel = os.getenv('MAIN_CHANNEL')
-        self.game_channel = os.getenv('GAME_CHANNEL')
+        self.server = config.SERVER
+        self.sslport = config.SSLPORT
+        self.admin_nick = config.ADMIN_NICK
+        self.admin_ident = config.ADMIN_IDENT
+        self.exit_code = config.EXIT_CODE
+        self.ignore_list = config.IGNORE_LIST
+        self.bot_nick = config.BOT_NICK
+        self.main_channel = config.MAIN_CHANNEL
+        self.game_channel = config.GAME_CHANNEL
         return
 
 
@@ -111,6 +114,10 @@ class irc_client():
             message = f"{nick}: {message}"
         if not target:
             target = self.main_channel
+        log_msg({'nick': self.bot_nick,
+                 'target': target,
+                 'message': message,
+                 'timestamp': time.time()})
         self.send_bytes(f"PRIVMSG {target} :{message}")
         return
 

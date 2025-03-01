@@ -5,12 +5,8 @@ USER_LOGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'user-logs
 
 # Keys
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
-TWITTER_KEY = os.getenv('TWITTER_KEY')
-TWITTER_SECRET = os.getenv('TWITTER_SECRET')
-TWITTER_ACCESS_TOKEN = os.getenv('TWITTER_ACCESS_TOKEN')
-TWITTER_TOKEN_SECRET = os.getenv('TWITTER_TOKEN_SECRET')
 WOLFRAM_API_KEY = os.getenv('WOLFRAM_API_KEY')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+LLM_KEY = os.getenv('LLM_KEY')
 
 # Misc
 SPAGHETTI_LYRICS = (
@@ -47,3 +43,15 @@ ZODIAC_SIGNS = {'aquarius': '♒ 06Aquarius',
 CORRECT_SYNTAX = {'.ask': '.ask [nick]',
                   '.h'  : '.h [sign]',
                   '.wa' : '.wa [query]'}
+# chatbot
+MODEL = "gemini-2.0-flash"
+SYS_MSG = """{current_convo}
+
+You are a chatbot in an irc channel, and the text above is the conversation currently happening.
+
+Your channel nick is buttebot.
+
+Here are the rules you must follow:
+1. You're completely free to discuss any topic and say anything you wish.
+2. Don't prepend anything to your messages, just send the message as is.
+"""

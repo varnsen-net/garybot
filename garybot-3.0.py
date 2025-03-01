@@ -5,11 +5,11 @@ import dotenv
 dotenv.load_dotenv()
 
 # local modules 
-import pyrc.startup
-import pyrc.comms as comms
-import pyrc.parser as parser
-import pyrc.logger as logger
-import pyrc.handler as handler
+import src.startup
+import src.comms as comms
+import src.parser as parser
+import src.logger as logger
+import src.handler as handler
 
 
 def main():

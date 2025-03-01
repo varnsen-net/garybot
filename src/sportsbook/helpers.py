@@ -6,13 +6,13 @@ import requests
 import json
 
 # local modules
-import pyrc.sportsbook.constants as constants 
-import pyrc.sportsbook.exceptions as exceptions
+import src.sportsbook.exceptions as exceptions
+import src.config as config
 
 
 def fetch_league_odds_from_api(sport_key,
                                bookmaker='unibet',
-                               odds_api_key=constants.ODDS_API_KEY):
+                               odds_api_key=config.ODDS_API_KEY):
     """
     Fetches NFL moneyline odds from the Odds API for the given bookmaker.
     
@@ -41,7 +41,7 @@ def fetch_league_odds_from_api(sport_key,
 
 
 def check_for_valid_query(word_list,
-                          sport_key_map=constants.SPORT_KEY_MAP):
+                          sport_key_map=config.SPORT_KEY_MAP):
     """
     Checks if the user provided a team and valid league to query.
     
@@ -107,8 +107,8 @@ def update_odds_file_if_necessary(league):
     :return: None
     :rtype: None
     """
-    sport_key = constants.SPORT_KEY_MAP[league]
-    filepath = f"{constants.ODDS_DIR}/{sport_key}.json"
+    sport_key = config.SPORT_KEY_MAP[league]
+    filepath = f"{config.ODDS_DIR}/{sport_key}.json"
     if not os.path.exists(filepath) or league_odds_file_is_old(filepath):
         write_new_league_odds_file(sport_key, filepath)
     return
@@ -122,8 +122,8 @@ def load_league_odds(league):
     :return: The league odds.
     :rtype: dict
     """
-    sport_key = constants.SPORT_KEY_MAP[league]
-    filepath = f"{constants.ODDS_DIR}/{sport_key}.json"
+    sport_key = config.SPORT_KEY_MAP[league]
+    filepath = f"{config.ODDS_DIR}/{sport_key}.json"
     with open(filepath, 'r') as file: 
         league_odds = json.load(file)
     return league_odds

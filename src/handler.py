@@ -3,9 +3,9 @@ import re
 import threading
 
 # local modules
-import pyrc.logger as logger
-import pyrc.channel_functions.functions as fun # these functions are FUN! :^)
-import pyrc.sportsbook.functions as sportsbook
+import src.logger as logger
+import src.channel_functions.functions as fun # these functions are FUN! :^)
+import src.sportsbook.functions as sportsbook
 
 # regular expressions
 IMAGINE_REGEX = re.compile(r"^imagine unironically")
@@ -13,15 +13,6 @@ REASON_REGEX = re.compile(r"\breason\b")
 DOTBE = "youtu\.be/([\w\d]{11})"
 DOTCOM = "youtube\.com/watch\?v=([\w\d]{11})"
 YOUTUBE_REGEX = re.compile(fr"{DOTBE}|{DOTCOM}")
-TWITTER_REGEX = re.compile(r"twitter\.com/\w+/status/(\d+)")
-
-# map triggers to functions
-TRIGGER_MAP = {'.spaghetti': fun.dot_spaghetti,
-               '.ask': fun.dot_ask,
-               '.h': fun.dot_horoscope,
-               '.wa': fun.dot_wolfram,
-               '.apod': fun.dot_apod,
-               '.sb': sportsbook.dot_sportsbook}
 
 
 def run(irc_function:callable, *args, **kwargs) -> None:
@@ -45,7 +36,6 @@ def handler(message_payload, irc_client):
     trigger = message_payload['word_list'][0]
     message = message_payload['message']
 
-    # auto-replies
     if IMAGINE_REGEX.search(message):
         run(fun.imagine_without_iron, message, irc_client)
 
@@ -56,15 +46,19 @@ def handler(message_payload, irc_client):
         for video_id in video_ids:
             run(fun.fetch_youtube_stats, video_id, irc_client)
 
-    if (tweet_ids := TWITTER_REGEX.findall(message)):
-        for tweet_id in tweet_ids:
-            run(fun.fetch_tweet, tweet_id, irc_client)
-
-    # primary channel functions
-    if trigger in TRIGGER_MAP.keys():
-        run(TRIGGER_MAP[trigger], message_payload, irc_client)
-
-    if trigger.startswith(irc_client.bot_nick):
+    if message.startswith(irc_client.bot_nick):
         run(fun.dot_arb, message_payload, irc_client)
+
+    match trigger:
+        case '.spaghetti':
+            run(fun.dot_spaghetti, message_payload, irc_client)
+        case '.ask':
+            run(fun.dot_ask, message_payload, irc_client)
+        case '.wa':
+            run(fun.dot_wolfram, message_payload, irc_client)
+        case '.apod':
+            run(fun.dot_apod, message_payload, irc_client)
+        case '.sb':
+            run(sportsbook.dot_sportsbook, message_payload, irc_client)
 
     return

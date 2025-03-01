@@ -1,6 +1,6 @@
 # local modules
-import pyrc.sportsbook.helpers as helpers
-import pyrc.sportsbook.exceptions as exceptions
+import src.sportsbook.helpers as helpers
+import src.sportsbook.exceptions as exceptions
 
 
 def dot_sportsbook(message_payload, irc_client):
@@ -8,7 +8,7 @@ def dot_sportsbook(message_payload, irc_client):
     Fetches the sportsbook odds for a given league and team.
 
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """

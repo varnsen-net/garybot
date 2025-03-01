@@ -1,15 +1,16 @@
 import random
 import requests
 import isodate
-import tweepy
-import html
 import urllib
-import pandas as pd
+
+import sqlite3
+from google import genai
+from google.genai import types
 
 # local imports
-import pyrc.channel_functions.constants as constants
-import pyrc.channel_functions.helpers as helpers
-import pyrc.channel_functions.exceptions as exceptions
+import src.channel_functions.helpers as helpers
+import src.channel_functions.exceptions as exceptions
+import src.config as config
 
 
 def imagine_without_iron(message, irc_client):
@@ -17,7 +18,7 @@ def imagine_without_iron(message, irc_client):
     Randomize the case of each letter of the user's message.
     
     :param str message: The user's message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :returns: None
     :rtype: None
     """
@@ -34,12 +35,12 @@ def reason_will_prevail(irc_client) -> None:
 
 def fetch_youtube_stats(video_id,
                         irc_client,
-                        api_key=constants.YOUTUBE_API_KEY):
+                        api_key=config.YOUTUBE_API_KEY):
     """
     Fetches stats for a youtube video from googleapis.
     
     :param str video_id: The youtube video id to fetch stats for.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :param str api_key: The youtube api key.
     :returns: A string containing stats on the youtube video.
     :rtype: str
@@ -71,42 +72,9 @@ def fetch_youtube_stats(video_id,
     return
 
 
-def fetch_tweet(tweet_id,
-                irc_client,
-                twitter_key=constants.TWITTER_KEY,
-                twitter_secret=constants.TWITTER_SECRET,
-                twitter_access_token=constants.TWITTER_ACCESS_TOKEN,
-                twitter_token_secret=constants.TWITTER_TOKEN_SECRET):
-    """
-    Fetches a tweet from the twitter api.
-    
-    :param str tweet_id: The id of the tweet to fetch.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
-    :param str twitter_key: The twitter api key.
-    :param str twitter_secret: The twitter api secret.
-    :param str twitter_access_token: The twitter api access token.
-    :param str twitter_token_secret: The twitter api token secret.
-    :returns: None
-    :rtype: None
-    """
-    auth = tweepy.OAuthHandler(twitter_key, twitter_secret)
-    auth.set_access_token(twitter_access_token, twitter_token_secret)
-    tpy = tweepy.API(auth)
-    status = tpy.get_status(tweet_id, tweet_mode="extended")
-    header = '00,02 Twitter '
-    name = f"15{status.user.name}"
-    text = status.full_text.replace('\n', ' ')
-    text = f"02{text}"
-    text = html.unescape(text)
-    date = f"14{str(status.created_at)[:10]}"
-    response = " | ".join([header, date, name, text])
-    irc_client.send_message(response)
-    return
-
-
 def dot_spaghetti(message_payload, irc_client) -> None:
     """Return a random spaghetti quote."""
-    selection = random.choice(constants.SPAGHETTI_LYRICS)
+    selection = random.choice(config.SPAGHETTI_LYRICS)
     irc_client.send_message(selection, nick)
     return
 
@@ -116,7 +84,7 @@ def dot_ask(message_payload, irc_client):
     Fetch a random line from a requested user's message history.
 
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
 
@@ -129,19 +97,19 @@ def dot_ask(message_payload, irc_client):
     try:
         helpers.param_check(word_count,
                             required_params=1,
-                            correct_syntax=constants.CORRECT_SYNTAX['.ask'])
+                            correct_syntax=config.CORRECT_SYNTAX['.ask'])
         queried_nick = word_list[1]
-        filepath = f"{constants.USER_LOGS_DIR}/{queried_nick}.csv"
-        with open(filepath, "r", encoding="utf-8") as log:
-            log = pd.read_csv(
-                log, 
-                index_col=False,
-                usecols = [3],
-                header = None,
-            ).squeeze()
-        sample_log = log.sample(69, replace=True).dropna()
-        clean_log = sample_log[~sample_log.str.match('[,.!%]')]
-        selection = str(clean_log.sample(1).iloc[0])
+        with sqlite3.connect("./user_logs.db") as db:
+            results = db.execute(f"""
+                SELECT message
+                FROM user_logs
+                WHERE nick = ?
+                AND target = '{config.MAIN_CHANNEL}'
+                AND message GLOB '[A-Za-z0-9]*'
+                ORDER BY RANDOM()
+                LIMIT 1;
+            """, (queried_nick,))
+            selection = results.fetchone()[0]
         response = f"<{queried_nick}> {selection}"
         irc_client.send_message(response)
     except exceptions.MissingArgsError as e:
@@ -152,52 +120,12 @@ def dot_ask(message_payload, irc_client):
     return
 
 
-def dot_horoscope(message_payload, irc_client):
-    """
-    Fetch a user's horoscope from the Horoscope API.
-
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
-    :return: None
-    :rtype: None
-
-    :raises MissingArgsError: If the user did not provide a sign to query.
-    :raises IndexError: If the user provided an invalid sign.
-    """
-    word_count = message_payload['word_count']
-    word_list = message_payload['word_list']
-    nick = message_payload['nick']
-    try:
-        helpers.param_check(word_count,
-                            required_params=1,
-                            correct_syntax=constants.CORRECT_SYNTAX['.h'])
-        sign = word_list[1].lower()
-        params = (
-            ('sign', sign),
-            ('day', 'today'),
-        )
-        resp = requests.post('https://aztro.sameerkumar.website/', params=params)
-        horoscope = [f"{r.replace('_', ' ').title()}: {resp.json()[r]}"
-                     for r in resp.json()]
-        description = horoscope[2].split(' ', 1)[1]
-        tidbits = ' | '.join(horoscope[3:8])
-        header = constants.ZODIAC_SIGNS[sign]
-        response = ' | '.join([header, description, tidbits])
-        irc_client.send_message(response)
-    except exceptions.MissingArgsError as e:
-        irc_client.send_message(e, nick)
-    except IndexError:
-        e = 'That is not a valid astrological sign.'
-        irc_client.send_message(e, nick)
-    return
-
-
 def dot_wolfram(message_payload, irc_client):
     """
     Query Wolfram Alpha for a response.
     
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
@@ -207,8 +135,8 @@ def dot_wolfram(message_payload, irc_client):
     try:
         helpers.param_check(word_count,
                             required_params=1,
-                            correct_syntax=constants.CORRECT_SYNTAX['.wa'])
-        api_key = f"&appid={constants.WOLFRAM_API_KEY}"
+                            correct_syntax=config.CORRECT_SYNTAX['.wa'])
+        api_key = f"&appid={config.WOLFRAM_API_KEY}"
         url = "https://api.wolframalpha.com/v1/result?i="
         question = message.split(' ',1)[1]
         question = urllib.parse.quote_plus(question)
@@ -228,7 +156,7 @@ def dot_apod(message_payload, irc_client):
     Fetch a random Astronomy Picture of the Day from NASA's API.
 
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
@@ -247,7 +175,7 @@ def dot_arb(message_payload, irc_client):
     """Responds to a message with a response from OpenAI's ChatGPT API.
 
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: pyrc/comms.py).
+    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
@@ -255,15 +183,31 @@ def dot_arb(message_payload, irc_client):
     message = message_payload['message']
     word_count = message_payload['word_count']
     bot_nick = irc_client.bot_nick
-    if word_count == 1:
-        query = "i've got nothing to say."
-    else:
-        query = message.split(' ', 1)[1]
-    response = helpers.fetch_openai_response(nick, query, bot_nick)
-    response = response['choices'][0]['message']['content']
-    response = response.replace('\n', ' ').strip()
-    response = response[::-1]
-    irc_client.send_message(response, nick)
+    with sqlite3.connect("./user_logs.db") as db:
+        res = db.execute(
+            f"""SELECT nick,message
+            FROM user_logs
+            WHERE target = '{config.MAIN_CHANNEL}'
+            ORDER BY timestamp DESC
+            LIMIT 1000;"""
+        ).fetchall()
+    res.reverse()
+    current_convo = "\n".join([f"<{r[0]}> {r[1]}"
+                               for r in res])
+    sys_msg = config.SYS_MSG.format(current_convo=current_convo)
+    print(sys_msg)
+    # if word_count == 1:
+        # query = "i've got nothing to say."
+    # else:
+        # query = message.split(' ', 1)[1]
+    client = genai.Client(api_key=config.LLM_KEY)
+    response = client.models.generate_content(
+        model=config.MODEL,
+        config=types.GenerateContentConfig(
+            system_instruction=sys_msg),
+        contents=f"<{nick}> {message}",
+    )
+    irc_client.send_message(response.text, nick)
     return
 
     

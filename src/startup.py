@@ -1,7 +1,9 @@
 import os
 
+from src.config import PROJECT_WD
+
 # paths
-_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
+_DATA_PATH = os.path.join(PROJECT_WD, 'data')
 _REQUIRED_DIRS = ['user-logs', 'odds']
 
 
