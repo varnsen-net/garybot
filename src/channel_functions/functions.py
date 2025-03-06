@@ -6,11 +6,19 @@ import urllib
 import sqlite3
 from google import genai
 from google.genai import types
+from pydantic import BaseModel
 
-# local imports
 import src.channel_functions.helpers as helpers
 import src.channel_functions.exceptions as exceptions
 import src.config as config
+
+
+class BotResponse(BaseModel):
+    """"""
+    user_nick: str
+    user_message: str
+    bot_reply_normal: str
+    bot_reply_silly: str
 
 
 def imagine_without_iron(message, irc_client):
@@ -195,19 +203,16 @@ def dot_arb(message_payload, irc_client):
                                for r in res])
     with open(config.PROJECT_WD / 'prompt', 'r') as f:
         sys_msg = f.read().format(current_convo=current_convo)
-    print(sys_msg)
-    # if word_count == 1:
-        # query = "i've got nothing to say."
-    # else:
-        # query = message.split(' ', 1)[1]
     client = genai.Client(api_key=config.LLM_KEY)
     response = client.models.generate_content(
         model=config.MODEL,
         config=types.GenerateContentConfig(
-            system_instruction=sys_msg),
+            system_instruction=sys_msg,
+            response_mime_type='application/json',
+            response_schema=list[BotResponse]),
         contents=f"<{nick}> {message}",
     )
-    reply = (response.text
+    reply = (response.parsed[0].bot_reply_silly
              .strip('\n')
              .replace('\n\n', ' ')
              .replace('\n', ' '))
