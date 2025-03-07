@@ -19,6 +19,7 @@ class BotResponse(BaseModel):
     user_message: str
     bot_reply_normal: str
     bot_reply_silly: str
+    bot_reply_reverse_text: str
 
 
 def imagine_without_iron(message, irc_client):
@@ -212,7 +213,7 @@ def dot_arb(message_payload, irc_client):
             response_schema=list[BotResponse]),
         contents=f"<{nick}> {message}",
     )
-    reply = (response.parsed[0].bot_reply_silly
+    reply = (response.parsed[0].bot_reply_reverse_text[::-1]
              .strip('\n')
              .replace('\n\n', ' ')
              .replace('\n', ' '))
