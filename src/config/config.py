@@ -5,7 +5,7 @@ from pydantic import Field, field_validator, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-CONFIG_PATH = Path(__file__).parent
+PROJ_ROOT = Path(__file__).parent.parent.parent
 
 
 class AppSettings(BaseSettings):
@@ -37,9 +37,8 @@ class AppSettings(BaseSettings):
     odds_api_key: SecretStr = Field()
     llm_api_key: SecretStr = Field()
 
-    config_path: Path = Field(default=CONFIG_PATH.resolve())
-    project_root: Path = Field(default=CONFIG_PATH.parent.parent.resolve())
-    data_path: Path = Field(default=CONFIG_PATH.parent.parent.resolve() / "data")
+    project_root: Path = Field(default=PROJ_ROOT.resolve())
+    user_logs_path: Path = Field(default=PROJ_ROOT.resolve() / "data" / "user-logs" / "user_logs.db")
 
     @field_validator("port")
     @classmethod

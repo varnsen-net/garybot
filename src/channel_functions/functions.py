@@ -66,27 +66,17 @@ def dot_spaghetti():
     return random.choice(SPAGHETTI_LYRICS)
 
 
-def dot_ask(message_payload, user_logs_path):
+def dot_ask(user_logs_path, target, word_count, word_list):
     """
     Fetch a random line from a requested user's message history.
-
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: src/comms.py).
-    :return: None
-    :rtype: None
 
     :raises MissingArgsError: If the user did not provide a nick to query.
     :raises: FileNotFoundError: If the user's message history cannot be found.
     """
-    word_count = message_payload.word_count
-    word_list = message_payload.word_list
-    nick = message_payload.nick
-    target = message_payload.target
-    correct_syntax = CORRECT_SYNTAX['.ask']
     try:
         helpers.param_check(word_count,
                             required_params=1,
-                            correct_syntax=correct_syntax)
+                            correct_syntax=CORRECT_SYNTAX['.ask'])
         queried_nick = word_list[1]
         with sqlite3.connect(user_logs_path) as db:
             results = db.execute("""
@@ -111,7 +101,6 @@ def dot_wolfram(message_payload, irc_client, app_config):
     Query Wolfram Alpha for a response.
     
     :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
@@ -159,22 +148,13 @@ def dot_apod(message_payload, irc_client):
     return
 
 
-def dot_arb(message_payload, irc_client, app_config):
+def dot_arb(nick, target, message, llm_api_key, llm_model, user_logs_path,
+            main_channel, project_root, client_nick):
     """Responds to a message with a response from OpenAI's ChatGPT API.
 
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
-    nick = message_payload['nick']
-    message = message_payload['message']
-    word_count = message_payload['word_count']
-    user_logs_path = app_config.data_path / 'user_logs.db'
-    main_channel = app_config.irc_main_channel
-    project_root = app_config.project_root
-    llm_api_key = app_config.llm_api_key
-    llm_model = app_config.llm_model
     with sqlite3.connect(user_logs_path) as db:
         res = db.execute(
             """SELECT nick,message
@@ -188,7 +168,7 @@ def dot_arb(message_payload, irc_client, app_config):
     current_convo = "\n".join([f"<{r[0]}> {r[1]}"
                                for r in res])
     with open(project_root / 'prompt', 'r') as f:
-        sys_msg = f.read().format(current_convo=current_convo)
+        sys_msg = f.read().format(current_convo=current_convo, client_nick=client_nick)
     client = genai.Client(api_key=llm_api_key)
     response = client.models.generate_content(
         model=llm_model,
@@ -202,8 +182,7 @@ def dot_arb(message_payload, irc_client, app_config):
              .strip('\n')
              .replace('\n\n', ' ')
              .replace('\n', ' '))
-    irc_client.send_message(reply, nick)
-    return
+    return f"{nick}: {reply}"
 
     
 

@@ -50,12 +50,11 @@ class IRCClient:
                  *,
                  reconnect_delay=30.0,
                  max_reconnects=5):
-        self.server = app_config.server
-        self.port = int(app_config.port)
-        self.nick = app_config.nick # bot's own nick
-        self.admin_nick = app_config.admin_nick # bot admin's nick
-        self.main_channel = app_config.main_channel
-        self.user_logs_path = app_config.data_path / 'user-logs' / 'user_logs.db'
+        self.app_config = app_config
+        self.server = self.app_config.server
+        self.port = int(self.app_config.port)
+        self.nick = self.app_config.nick # bot's own nick
+        self.main_channel = self.app_config.main_channel
 
         raw_ignore = getattr(app_config, "ignore_list", "") or ""
         self.ignore_list = {
@@ -78,16 +77,9 @@ class IRCClient:
             try:
                 self._connect()
                 attempt = 0 # reset on successful connection
+                gevent.sleep(1) # small delay to ensure connection is fully established
                 self._writer = Writer(self._sock, self._stop_event)
-                self._dispatcher = Dispatcher(
-                    self._writer.inbox,
-                    self.nick,
-                    self.admin_nick,
-                    self.main_channel,
-                    self.ignore_list,
-                    self.user_logs_path,
-                    self._stop_event
-                )
+                self._dispatcher = Dispatcher(self._writer.inbox, self.app_config, self._stop_event)
                 self._listener = Listener(self._dispatcher.inbox, self._sock, self._stop_event)
                 self._writer.start()
                 self._dispatcher.start()

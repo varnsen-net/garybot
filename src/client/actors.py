@@ -85,20 +85,19 @@ class Dispatcher(gevent.Greenlet):
 
     def __init__(self,
                  outbox,
-                 nick,
-                 admin_nick,
-                 main_channel,
-                 ignore_list,
-                 user_logs_path,
+                 app_config,
                  stop_event):
         gevent.Greenlet.__init__(self)
         self.inbox = Queue()
         self.outbox = outbox
-        self.nick = nick
-        self.admin_nick = admin_nick
-        self.main_channel = main_channel
-        self.ignore_list = ignore_list
-        self.user_logs_path = user_logs_path
+        self.nick = app_config.nick
+        self.admin_nick = app_config.admin_nick
+        self.main_channel = app_config.main_channel
+        self.ignore_list = app_config.ignore_list
+        self.project_root = app_config.project_root
+        self.user_logs_path = app_config.user_logs_path
+        self.llm_api_key = app_config.llm_api_key
+        self.llm_model = app_config.llm_model
         self._pool = Pool(10)
         self._running = False
         self._stop_event = stop_event
@@ -168,13 +167,6 @@ class Dispatcher(gevent.Greenlet):
                     channel_functions.reason_will_prevail,
                     parsed.target
                 )
-            if parsed.message.startswith(self.nick):
-                self._pool.spawn(
-                    self._run_function,
-                    channel_functions.respond_to_mention,
-                    parsed.target,
-                    parsed.message
-                )
             if parsed.message.startswith(".spaghetti"):
                 self._pool.spawn(
                     self._run_function,
@@ -186,8 +178,25 @@ class Dispatcher(gevent.Greenlet):
                     self._run_function,
                     channel_functions.dot_ask,
                     parsed.target,
-                    parsed,
                     self.user_logs_path,
+                    parsed.target,
+                    parsed.word_count,
+                    parsed.word_list,
+                )
+            if parsed.message.startswith(self.nick):
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_arb,
+                    parsed.target,
+                    parsed.nick,
+                    parsed.target,
+                    parsed.message,
+                    self.llm_api_key.get_secret_value(),
+                    self.llm_model,
+                    self.user_logs_path,
+                    self.main_channel,
+                    self.project_root,
+                    self.nick
                 )
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")
@@ -244,7 +253,7 @@ class Dispatcher(gevent.Greenlet):
             return False
         if msg.nick.lower() in self.ignore_list:
             return False
-        if msg.target not in self.main_channel:
+        if msg.target != self.main_channel:
             return False
         return True
 
