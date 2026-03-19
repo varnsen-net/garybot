@@ -7,10 +7,14 @@ import sqlite3
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
+from gevent import sleep
 
 import src.channel_functions.helpers as helpers
 import src.channel_functions.exceptions as exceptions
-import src.config as config
+
+
+CORRECT_SYNTAX = {'.ask': '.ask [nick]',
+                  '.wa' : '.wa [query]'}
 
 
 class BotResponse(BaseModel):
@@ -22,73 +26,47 @@ class BotResponse(BaseModel):
     bot_reply_reverse_text: str
 
 
-def imagine_without_iron(message, irc_client):
+def imagine_without_iron(message):
     """
     Randomize the case of each letter of the user's message.
     
     :param str message: The user's message.
-    :param object irc_client: The IRC client object (see: src/comms.py).
     :returns: None
     :rtype: None
     """
-    random_cased = "".join(random.choice([f.upper(),f]) for f in message)
-    irc_client.send_message(random_cased)
-    return
+    return "".join(random.choice([f.upper(),f]) for f in message)
 
 
-def reason_will_prevail(irc_client) -> None:
+def reason_will_prevail():
     """Duh."""
-    irc_client.send_message('REASON WILL PREVAIL')
-    return 
+    return 'REASON WILL PREVAIL'
 
 
-def fetch_youtube_stats(video_id,
-                        irc_client,
-                        api_key=config.YOUTUBE_API_KEY):
-    """
-    Fetches stats for a youtube video from googleapis.
-    
-    :param str video_id: The youtube video id to fetch stats for.
-    :param object irc_client: The IRC client object (see: src/comms.py).
-    :param str api_key: The youtube api key.
-    :returns: A string containing stats on the youtube video.
-    :rtype: str
-    """
-    path = "https://www.googleapis.com/youtube/v3/videos"
-    params = {
-        'id' : video_id,
-        'key' : api_key,
-        'part' : 'snippet,statistics,contentDetails'
-    }
-    response = requests.get(path, params).json()
-    snippet = response['items'][0]['snippet']
-    stats = response['items'][0]['statistics']
-    content = response['items'][0]['contentDetails']
-
-    # compose reply
-    parts = {
-        'Title' : snippet['title'],
-        'Duration' : str(isodate.parse_duration(content['duration'])),
-        'Uploader' : snippet['channelTitle'],
-        'Uploaded' : snippet['publishedAt'][:10],
-        'Views' : stats['viewCount'],
-        'Likes' : stats['likeCount'],
-    }
-    parts_fmted = [f'26{e}: 04{parts[e]}' for e in parts.keys()]
-    header = '01,00 You00,04Tube '
-    response = ' | '.join([header] + parts_fmted)
-    irc_client.send_message(response)
-    return
-
-
-def dot_spaghetti(message_payload, irc_client) -> None:
+def dot_spaghetti():
     """Return a random spaghetti quote."""
-    selection = random.choice(config.SPAGHETTI_LYRICS)
-    irc_client.send_message(selection, nick)
-    return
+    SPAGHETTI_LYRICS = (
+        "Lose yourself in Mom's spaghetti. It's ready.",
+        "You only get one spaghetti.",
+        "Spaghetti only comes once in a lifetime.",
+        "Amplified by the fact that I keep on forgetting to make spaghetti.",
+        "Tear this motherfucking roof off like two Mom's spaghettis.",
+        "Look, if you had Mom's spaghetti, would you capture it, or just let it slip?",
+        "There's vomit on his sweater spaghetti, Mom's spaghetti.",
+        "He opens his mouth but spaghetti won't come out.",
+        "Snap back to spaghetti.",
+        "Oh, there goes spaghetti.",
+        "He knows he keeps on forgetting Mom's spaghetti.",
+        "Mom's spaghetti's mine for the taking.",
+        "He goes home and barely knows his own Mom's spaghetti.",
+        "Mom's spaghetti's close to post mortem.",
+        "No more games. I'ma change what you call spaghetti.",
+        "Man these goddamn food stamps don't buy spaghetti.",
+        "This may be the only Mom's spaghetti I got.",
+        "Make me spaghetti as we move toward a new world order.")
+    return random.choice(SPAGHETTI_LYRICS)
 
 
-def dot_ask(message_payload, irc_client):
+def dot_ask(message_payload, user_logs_path):
     """
     Fetch a random line from a requested user's message history.
 
@@ -100,36 +78,35 @@ def dot_ask(message_payload, irc_client):
     :raises MissingArgsError: If the user did not provide a nick to query.
     :raises: FileNotFoundError: If the user's message history cannot be found.
     """
-    word_count = message_payload['word_count']
-    word_list = message_payload['word_list']
-    nick = message_payload['nick']
+    word_count = message_payload.word_count
+    word_list = message_payload.word_list
+    nick = message_payload.nick
+    target = message_payload.target
+    correct_syntax = CORRECT_SYNTAX['.ask']
     try:
         helpers.param_check(word_count,
                             required_params=1,
-                            correct_syntax=config.CORRECT_SYNTAX['.ask'])
+                            correct_syntax=correct_syntax)
         queried_nick = word_list[1]
-        with sqlite3.connect("./user_logs.db") as db:
-            results = db.execute(f"""
+        with sqlite3.connect(user_logs_path) as db:
+            results = db.execute("""
                 SELECT message
                 FROM user_logs
                 WHERE nick = ?
-                AND target = '{config.MAIN_CHANNEL}'
+                AND target = ?
                 AND message GLOB '[A-Za-z0-9]*'
                 ORDER BY RANDOM()
                 LIMIT 1;
-            """, (queried_nick,))
+            """, (queried_nick, target))
             selection = results.fetchone()[0]
-        response = f"<{queried_nick}> {selection}"
-        irc_client.send_message(response)
+        return f"<{queried_nick}> {selection}"
     except exceptions.MissingArgsError as e:
-        irc_client.send_message(e, nick)
-    except FileNotFoundError:
-        e = "I have no record of that user."
-        irc_client.send_message(e, nick)
-    return
+        return e
+    except TypeError:
+        return f"Sorry, I have no record of {queried_nick} in {target}."
 
 
-def dot_wolfram(message_payload, irc_client):
+def dot_wolfram(message_payload, irc_client, app_config):
     """
     Query Wolfram Alpha for a response.
     
@@ -141,11 +118,13 @@ def dot_wolfram(message_payload, irc_client):
     nick = message_payload['nick']
     message = message_payload['message']
     word_count = message_payload['word_count']
+    correct_syntax = CORRECT_SYNTAX['.wa']
+    wolfram_api_key = app_config.wolfram_api_key
     try:
         helpers.param_check(word_count,
                             required_params=1,
-                            correct_syntax=config.CORRECT_SYNTAX['.wa'])
-        api_key = f"&appid={config.WOLFRAM_API_KEY}"
+                            correct_syntax=correct_syntax)
+        api_key = f"&appid={wolfram_api_key}"
         url = "https://api.wolframalpha.com/v1/result?i="
         question = message.split(' ',1)[1]
         question = urllib.parse.quote_plus(question)
@@ -180,7 +159,7 @@ def dot_apod(message_payload, irc_client):
     return
 
 
-def dot_arb(message_payload, irc_client):
+def dot_arb(message_payload, irc_client, app_config):
     """Responds to a message with a response from OpenAI's ChatGPT API.
 
     :param dict message_payload: The message payload parsed from the raw message.
@@ -191,22 +170,28 @@ def dot_arb(message_payload, irc_client):
     nick = message_payload['nick']
     message = message_payload['message']
     word_count = message_payload['word_count']
-    with sqlite3.connect("./user_logs.db") as db:
+    user_logs_path = app_config.data_path / 'user_logs.db'
+    main_channel = app_config.irc_main_channel
+    project_root = app_config.project_root
+    llm_api_key = app_config.llm_api_key
+    llm_model = app_config.llm_model
+    with sqlite3.connect(user_logs_path) as db:
         res = db.execute(
-            f"""SELECT nick,message
+            """SELECT nick,message
             FROM user_logs
-            WHERE target = '{config.MAIN_CHANNEL}'
+            WHERE target = ?
             ORDER BY timestamp DESC
-            LIMIT 500;"""
+            LIMIT 100;"""
+            , (main_channel,)
         ).fetchall()
     res.reverse()
     current_convo = "\n".join([f"<{r[0]}> {r[1]}"
                                for r in res])
-    with open(config.PROJECT_WD / 'prompt', 'r') as f:
+    with open(project_root / 'prompt', 'r') as f:
         sys_msg = f.read().format(current_convo=current_convo)
-    client = genai.Client(api_key=config.LLM_KEY)
+    client = genai.Client(api_key=llm_api_key)
     response = client.models.generate_content(
-        model=config.MODEL,
+        model=llm_model,
         config=types.GenerateContentConfig(
             system_instruction=sys_msg,
             response_mime_type='application/json',

@@ -1,0 +1,67 @@
+""""""
+from pathlib import Path
+from functools import lru_cache
+from pydantic import Field, field_validator, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+CONFIG_PATH = Path(__file__).parent
+
+
+class AppSettings(BaseSettings):
+    """Base config — values shared across all environments.
+
+    pydantic-settings automatically reads from:
+      1. Environment variables (highest priority)
+      2. The .env file specified in model_config
+      3. Field defaults (lowest priority)
+
+    Field names map to env vars by uppercasing: `irc_host` -> IRC_HOST
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    nick: str = Field()
+    server: str = Field()
+    port: str = Field()
+    main_channel: str = Field()
+    llm_model: str = Field()
+    ignore_list: str = Field()
+    admin_nick: str = Field()
+    wolfram_api_key: SecretStr = Field()
+    odds_api_key: SecretStr = Field()
+    llm_api_key: SecretStr = Field()
+
+    config_path: Path = Field(default=CONFIG_PATH.resolve())
+    project_root: Path = Field(default=CONFIG_PATH.parent.parent.resolve())
+    data_path: Path = Field(default=CONFIG_PATH.parent.parent.resolve() / "data")
+
+    @field_validator("port")
+    @classmethod
+    def valid_port(cls, v: str) -> int:
+        try:
+            v = int(v)
+        except ValueError:
+            raise ValueError(f"Port must be an integer: {v}")
+        if not (1 <= v <= 65535):
+            raise ValueError(f"Invalid port: {v}")
+        return v
+
+
+@lru_cache
+def get_config() -> AppSettings:
+    """
+    @lru_cache means this runs once — the same object is returned on
+    every subsequent call, so your whole app shares one config instance.
+
+    Usage:
+        from config import get_settings
+        settings = get_settings()
+        print(settings.irc_host)
+    """
+    return AppSettings()
