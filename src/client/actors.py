@@ -104,7 +104,6 @@ class Dispatcher(gevent.Greenlet):
 
     def _dispatch(self, line):
         """"""
-        logger.debug(f"< {line}")
 
         # ping pong
         ping_match = self._PING_RE.match(line)
