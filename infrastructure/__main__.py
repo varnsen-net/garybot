@@ -127,7 +127,6 @@ if __name__ == "__main__":
         ).decode()
     )
 
-
     with open("openrc_service_script", "r") as f:
         openrc_service_script = f.read().format(
             username=username,
