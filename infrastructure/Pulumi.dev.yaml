@@ -1,0 +1,21 @@
+config:
+  vultr:apiKey:
+    secure: AAABAMsL26WICk9WJmnxwV4+MDH56slpV1kqkGSCWqUSsVAHV6MXB7yeGVRRwiR9Wh4caw71JBw1ztf5OD/nE40REOM=
+  garybot:irc_admin_nick: marymagenta
+  garybot:irc_exit_code: goodnight
+  garybot:irc_ignore_list:
+    secure: AAABAHKjWGezu71m9STtSg/hlL29kOqRFIuJ1j5UBntc/mEv1RhEw2RLP7989ZC27RIpy9esNujWeGIcKEbNu4M7cZ+VGQwHcTCRCNZBKtp/SrmL7aeq6rBH27d3LrOfngfTq0DVxR0um56zQkcBKPJv
+  garybot:irc_llm_model: gemini-2.5-flash-lite
+  garybot:irc_main_channel:
+    secure: AAABAIt8ez5jkFiIXjCp6ki1cPeBmr8NJZ3SBJJuANRh9XVsuyvy0AM=
+  garybot:irc_nick: garybot
+  garybot:irc_port:
+    secure: AAABAOy71N4t8A79fh+8nuaE43SQ2RNrZvapffNVSAKoicLE
+  garybot:irc_server:
+    secure: AAABAPhtuVLJ5vDT37RiEfM20b2Zun84ZvoV7xGDtbQYA2mDysihd8BR3M+IcYc=
+  garybot:llm_api_key:
+    secure: AAABAJdrM0QGBZM5tQsWVGpuRKdqBFb0I4GVAOBoycT4FwveT8ZoYc0Ig1B+C0hyUmmdNbRGYjvEjydD1BkmB8nbaGzvWxU=
+  garybot:odds_api_key:
+    secure: AAABABCOdH+g5NURkB97IDeBfA4Zw96wL+FtRvbE0Z+RvocjZZKWhdbORJy2WRAONFCFkP5qh7tOs5hX0rpvMw==
+  garybot:wolfram_api_key:
+    secure: AAABAMSsqitQoRhc1Ti1bII5CxMrqgnS1TobCka8vB8KWBNctfXYdZgrqztlqiJqzQ==

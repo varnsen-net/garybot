@@ -1,0 +1,10 @@
+name: garybot
+description: Vultr instrastructure for IRC bot
+runtime:
+  name: python
+  options:
+    toolchain: uv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

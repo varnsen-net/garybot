@@ -1,0 +1,24 @@
+#!/sbin/openrc-run
+
+name="garybot"
+description="garybot service"
+
+REPO_DIR="/home/{username}/{repo_name}"
+
+command="/usr/bin/uv"
+command_args="run ${{REPO_DIR}}/src/main.py"
+command_user="{username}"
+command_background=true
+directory="${{REPO_DIR}}"
+pidfile="/run/${{RC_SVCNAME}}.pid"
+
+export PYTHONPATH="${{REPO_DIR}}"
+
+output_log="${{REPO_DIR}}/${{RC_SVCNAME}}.log"
+error_log="${{REPO_DIR}}/${{RC_SVCNAME}}.log"
+
+depend() {{
+    need net
+    after logger
+    after firewall
+}}
