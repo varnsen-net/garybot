@@ -53,7 +53,7 @@ Garybot is configured via environment variables or a `.env` file in the project 
 
 | Trigger | Description |
 |---|---|
-| `.ask <question>` | Ask a question using recent channel context |
+| `.ask <nick>` | Return a random line from the given user |
 | `<botnick>: <message>` | Address the bot directly for an LLM response |
 | `.spaghetti` | Spaghetti |
 | `imagine unironically` | Triggered response |

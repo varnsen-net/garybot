@@ -6,7 +6,7 @@ import urllib
 import sqlite3
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from gevent import sleep
 
 import src.channel_functions.helpers as helpers
@@ -16,14 +16,16 @@ import src.channel_functions.exceptions as exceptions
 CORRECT_SYNTAX = {'.ask': '.ask [nick]',
                   '.wa' : '.wa [query]'}
 
+from pprint import pprint
+
 
 class BotResponse(BaseModel):
     """"""
-    user_nick: str
-    user_message: str
-    bot_reply_normal: str
-    bot_reply_silly: str
-    bot_reply_reverse_text: str
+    user_nick: str = Field(description="The IRC nick of the user who sent the message.")
+    user_message: str = Field(description="The message sent by the user.")
+    bot_reply_intent: str = Field(description="The idea or intention behind the bot's reply.")
+    bot_reply_normal: str = Field(description="The bot's reply in normal text.")
+    bot_reply_reverse_text: str = Field(description="The bot's reply with the text reversed")
 
 
 def imagine_without_iron(message):
@@ -175,9 +177,12 @@ def dot_arb(nick, target, message, llm_api_key, llm_model, user_logs_path,
         config=types.GenerateContentConfig(
             system_instruction=sys_msg,
             response_mime_type='application/json',
-            response_schema=list[BotResponse]),
+            response_schema=list[BotResponse],
+            max_output_tokens=500,
+        ),
         contents=f"<{nick}> {message}",
     )
+    pprint(response)
     reply = (response.parsed[0].bot_reply_reverse_text[::-1]
              .strip('\n')
              .replace('\n\n', ' ')
