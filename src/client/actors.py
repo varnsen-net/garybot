@@ -85,19 +85,26 @@ class Dispatcher(gevent.Greenlet):
 
     def __init__(self,
                  outbox,
-                 app_config,
+                 nick,
+                 main_channel,
+                 admin_nick,
+                 ignore_list,
+                 llm_model,
+                 llm_api_key,
+                 project_root,
+                 user_logs_path,
                  stop_event):
         gevent.Greenlet.__init__(self)
         self.inbox = Queue()
         self.outbox = outbox
-        self.nick = app_config.nick
-        self.admin_nick = app_config.admin_nick
-        self.main_channel = app_config.main_channel
-        self.ignore_list = app_config.ignore_list
-        self.project_root = app_config.project_root
-        self.user_logs_path = app_config.user_logs_path
-        self.llm_api_key = app_config.llm_api_key
-        self.llm_model = app_config.llm_model
+        self.nick = nick
+        self.main_channel = main_channel
+        self.admin_nick = admin_nick
+        self.ignore_list = ignore_list
+        self.llm_model = llm_model
+        self.llm_api_key = llm_api_key
+        self.project_root = project_root
+        self.user_logs_path = user_logs_path
         self._pool = Pool(10)
         self._running = False
         self._stop_event = stop_event

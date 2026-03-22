@@ -40,7 +40,7 @@ class AppSettings(BaseSettings):
     project_root: Path = Field(default=PROJ_ROOT.resolve())
     user_logs_path: Path = Field(default=PROJ_ROOT.resolve() / "data" / "user-logs" / "user_logs.db")
 
-    @field_validator("port")
+    @field_validator("irc_port")
     @classmethod
     def valid_port(cls, v: str) -> int:
         try:

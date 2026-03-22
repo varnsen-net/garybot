@@ -50,11 +50,20 @@ class IRCClient:
                  *,
                  reconnect_delay=30.0,
                  max_reconnects=5):
-        self.app_config = app_config
-        self.server = self.app_config.server
-        self.port = int(self.app_config.port)
-        self.nick = self.app_config.nick # bot's own nick
-        self.main_channel = self.app_config.main_channel
+        self.server = app_config.irc_server
+        self.port = int(app_config.irc_port)
+        self.nick = app_config.irc_nick # bot's own nick
+        self.main_channel = app_config.irc_main_channel
+        self.admin_nick = app_config.irc_admin_nick # bot admin's nick for privileged commands
+        self.ignore_list = app_config.irc_ignore_list
+        self.llm_model = app_config.irc_llm_model
+        # TODO: maybe just have fcns use env vars directly
+        self.wolfram_api_key = app_config.wolfram_api_key
+        self.odds_api_key = app_config.odds_api_key
+        self.llm_api_key = app_config.llm_api_key
+
+        self.project_root = app_config.project_root
+        self.user_logs_path = app_config.user_logs_path
 
         raw_ignore = getattr(app_config, "ignore_list", "") or ""
         self.ignore_list = {
@@ -79,7 +88,18 @@ class IRCClient:
                 attempt = 0 # reset on successful connection
                 gevent.sleep(1) # small delay to ensure connection is fully established
                 self._writer = Writer(self._sock, self._stop_event)
-                self._dispatcher = Dispatcher(self._writer.inbox, self.app_config, self._stop_event)
+                self._dispatcher = Dispatcher(
+                    self._writer.inbox,
+                    self.nick,
+                    self.main_channel,
+                    self.admin_nick,
+                    self.ignore_list,
+                    self.llm_model,
+                    self.llm_api_key,
+                    self.project_root,
+                    self.user_logs_path,
+                    self._stop_event
+                )
                 self._listener = Listener(self._dispatcher.inbox, self._sock, self._stop_event)
                 self._writer.start()
                 self._dispatcher.start()
