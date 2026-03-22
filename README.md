@@ -3,13 +3,14 @@
 Welcome to the repo for garybot, an IRC bot built with Python and gevent. Garybot connects to an IRC server, listens to a channel, and responds to commands and triggers with a handful of channel functions.
 
 ## How to run
+
 - Install the `uv` Python package manager.
 - Drop a `.env` file into the project repo root (details below).
 - Run `sh start.sh`.
 
 ## Architecture
 
-Gary uses a three-actor concurrency model built on gevent greenlets:
+Garybot uses a three-actor concurrency model built on gevent greenlets:
 
 - **Listener** — sits on the raw SSL socket, reads lines into a buffer, and puts complete lines onto a queue.
 - **Dispatcher** — receives raw IRC lines, parses them, and spawns short-lived greenlets to handle commands. Puts responses onto the Writer's inbox.
@@ -31,7 +32,7 @@ Each actor is a `gevent.Greenlet`. The client manages the lifecycle of all three
 
 ## Configuration
 
-Gary is configured via environment variables or a `.env` file in the project root.
+Garybot is configured via environment variables or a `.env` file in the project root.
 
 | Variable | Description |
 |---|---|
@@ -69,3 +70,26 @@ data/user-logs/user_logs.db
 
 schema: nick TEXT, target TEXT, message TEXT, timestamp REAL
 ```
+
+## Cloud environment
+The existing project infrastructure code is written with pulumi for a Vultr cloud environment. These steps assume you're generally familiar with both.
+
+- Create a pulumi account and install the CLI: https://www.pulumi.com/docs/iac/download-install/
+- Create a Vultr account and generate an API key: https://my.vultr.com/settings/#settingsapi
+- Share Vultr access token with pulumi project: `pulumi config set vultr:apiKey --secret <VULTR_API_KEY>`
+- Install the `uv` Python package manager.
+- Drop a `.env` file into the project repo root.
+
+You'll also need to drop a `.env` file into the `infrastructure` directory with the following variables:
+
+| Variable | Description |
+|---|---|
+| `VULTR_REGION` | Vultr region code (e.g. `ewr`) |
+| `USERNAME` | Username for the provisioned server |
+| `HOSTNAME` | Hostname for the provisioned server |
+| `PLAN` | Vultr plan code (e.g. `vc2-1c-2gb`) |
+| `OS_ID` | Vultr OS ID (e.g. `2076` for Alpine) |
+| `SSH_KEY_NAME` | Name of the SSH key you've uploaded to Vultr |
+| `REPO_NAME` | Name for the git repo (used in provisioning script) |
+| `REPO_URL` | URL for the git repo (used in provisioning script) |
+| `HOME_IP` | Your home IP address (used in provisioning script for firewall rules) |
