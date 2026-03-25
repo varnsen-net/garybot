@@ -38,7 +38,7 @@ class AppSettings(BaseSettings):
     llm_api_key: SecretStr = Field()
 
     project_root: Path = Field(default=PROJ_ROOT.resolve())
-    user_logs_path: Path = Field(default=PROJ_ROOT.resolve() / "data" / "user-logs" / "user_logs.db")
+    user_logs_path: Path = Field(default=PROJ_ROOT.resolve() / "data" / "user_logs" / "user_logs.db")
 
     @field_validator("irc_port")
     @classmethod
