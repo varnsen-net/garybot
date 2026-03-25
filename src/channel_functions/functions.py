@@ -180,10 +180,14 @@ def dot_arb(nick, target, message, llm_api_key, llm_model, user_logs_path,
         ),
         contents=f"<{nick}> {message}",
     )
-    reply = (response.parsed[0].bot_reply_reverse_text[::-1]
-             .strip('\n')
-             .replace('\n\n', ' ')
-             .replace('\n', ' '))
+    finish_reason = response.candidates[0].finish_reason.name
+    if finish_reason == "STOP":
+        reply = (response.parsed[0].bot_reply_reverse_text[::-1]
+                 .strip('\n')
+                 .replace('\n\n', ' ')
+                 .replace('\n', ' '))
+    else:
+        reply = f"Sorry, I couldn't generate a complete response: {finish_reason}"
     return f"{nick}: {reply}"
 
     
