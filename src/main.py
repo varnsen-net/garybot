@@ -15,9 +15,9 @@ def main():
 
     # move somewhere idk
     from pathlib import Path
-    odds_dir = app_config.project_root / data / "odds"
+    odds_dir = app_config.project_root / "data" / "odds"
     odds_dir.mkdir(parents=True, exist_ok=True)
-    user_logs_dir = app_config.project_root / data / "user_logs"
+    user_logs_dir = app_config.project_root / "data" / "user_logs"
     user_logs_dir.mkdir(parents=True, exist_ok=True)
 
     # make it dirty
