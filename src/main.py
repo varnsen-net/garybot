@@ -13,6 +13,13 @@ def main():
     app_config = get_config()
     logger.debug(f"App config: {app_config}")
 
+    # move somewhere idk
+    from pathlib import Path
+    odds_dir = app_config.project_root / data / "odds"
+    odds_dir.mkdir(parents=True, exist_ok=True)
+    user_logs_dir = app_config.project_root / data / "user_logs"
+    user_logs_dir.mkdir(parents=True, exist_ok=True)
+
     # make it dirty
     logger.info("Starting IRC client...")
     client = IRCClient(app_config)
