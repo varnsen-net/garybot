@@ -70,58 +70,36 @@ class IRCClient:
             n.lower().strip() for n in raw_ignore.split(",") if n.strip()
         }
 
-        self._reconnect_delay = reconnect_delay
-        self._max_reconnects = max_reconnects
-
         self._sock: "ssl.SSLSocket | None" = None
-        self._connected = False
-        self._running = False
         self._stop_event = gevent.event.Event()
 
     def start(self):
         """Connect and start the main listen loop, reconnecting as needed."""
-        self._running = True
-        attempt = 0
-        while self._running:
-            try:
-                self._connect()
-                attempt = 0 # reset on successful connection
-                gevent.sleep(1) # small delay to ensure connection is fully established
-                self._writer = Writer(self._sock, self._stop_event)
-                self._dispatcher = Dispatcher(
-                    self._writer.inbox,
-                    self.nick,
-                    self.main_channel,
-                    self.admin_nick,
-                    self.ignore_list,
-                    self.llm_model,
-                    self.llm_api_key,
-                    self.project_root,
-                    self.user_logs_path,
-                    self._stop_event
-                )
-                self._listener = Listener(self._dispatcher.inbox, self._sock, self._stop_event)
-                self._writer.start()
-                self._dispatcher.start()
-                self._listener.start()
-                gevent.joinall([
-                    self._writer,
-                    self._dispatcher,
-                    self._listener
-                ])
-            except (OSError, ssl.SSLError) as exc:
-                if not self._running:
-                    break
-                attempt += 1
-                logger.warning(f"Connection error (attempt {attempt}): {exc}")
-                if self._max_reconnects and attempt >= self._max_reconnects:
-                    logger.error("Max reconnection attempts reached. Exiting.")
-                    break
-                logger.info(f"Reconnecting in {self._reconnect_delay} second(s)...")
-                gevent.sleep(self._reconnect_delay)
-            finally:
-                self._disconnect()
-                break
+        self._connect()
+        gevent.sleep(1) # small delay to ensure connection is fully established
+        self._writer = Writer(self._sock, self._stop_event)
+        self._dispatcher = Dispatcher(
+            self._writer.inbox,
+            self.nick,
+            self.main_channel,
+            self.admin_nick,
+            self.ignore_list,
+            self.llm_model,
+            self.llm_api_key,
+            self.project_root,
+            self.user_logs_path,
+            self._stop_event
+        )
+        self._listener = Listener(self._dispatcher.inbox, self._sock, self._stop_event)
+        self._writer.start()
+        self._dispatcher.start()
+        self._listener.start()
+        gevent.joinall([
+            self._writer,
+            self._dispatcher,
+            self._listener
+        ])
+        self._disconnect()
 
     def _connect(self):
         """Open a TLS socket and register with the server."""
@@ -131,7 +109,6 @@ class IRCClient:
         ctx = ssl.create_default_context()
         self._sock = ctx.wrap_socket(raw_sock, server_hostname=self.server)
         self._sock.settimeout(self._RECV_TIMEOUT)
-        self._connected = True
 
         # IRC registration
         # move this elsewhere
@@ -148,5 +125,4 @@ class IRCClient:
             except OSError:
                 pass
             self._sock = None
-        self._connected = False
 

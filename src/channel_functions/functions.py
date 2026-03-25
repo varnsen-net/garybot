@@ -16,8 +16,6 @@ import src.channel_functions.exceptions as exceptions
 CORRECT_SYNTAX = {'.ask': '.ask [nick]',
                   '.wa' : '.wa [query]'}
 
-from pprint import pprint
-
 
 class BotResponse(BaseModel):
     """"""
@@ -182,7 +180,6 @@ def dot_arb(nick, target, message, llm_api_key, llm_model, user_logs_path,
         ),
         contents=f"<{nick}> {message}",
     )
-    pprint(response)
     reply = (response.parsed[0].bot_reply_reverse_text[::-1]
              .strip('\n')
              .replace('\n\n', ' ')
