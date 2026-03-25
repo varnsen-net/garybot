@@ -1,11 +1,13 @@
 #!/bin/sh
 
+CWD=$(pwd)
+
 # set the PYTHONPATH to the current directory
-export PYTHONPATH=$(pwd)
+export PYTHONPATH=$CWD:$PYTHONPATH
 
 # dirs
-mkdir -p data/odds
-mkdir -p data/user-logs
+mkdir -p $CWD/data/user-logs
+mkdir -p $CWD/data/odds
 
 # start the client
 uv run ./src/main.py
