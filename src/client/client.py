@@ -32,65 +32,40 @@ class IRCClient:
 
     Parameters
     ----------
-    app_config:
-        Any object with the attributes described in __init__.
-    reconnect_delay:
-        Seconds to wait between reconnection attempts (default 30).
-    max_reconnects:
-        Maximum consecutive reconnection attempts before giving up
-        (0 = unlimited, default 0).
-    encoding:
-        Line encoding used by the server (default 'utf-8', fallback 'latin-1').
+    app_config : AppConfig
+        Application configuration object containing necessary settings like server, port, nick, and main channel.
     """
 
     _RECV_TIMEOUT = 5.0
 
-    def __init__(self,
-                 app_config,
-                 *,
-                 reconnect_delay=30.0,
-                 max_reconnects=5):
+    def __init__(self, app_config):
         self.server = app_config.irc_server
         self.port = int(app_config.irc_port)
         self.nick = app_config.irc_nick # bot's own nick
         self.main_channel = app_config.irc_main_channel
-        self.admin_nick = app_config.irc_admin_nick # bot admin's nick for privileged commands
-        self.ignore_list = app_config.irc_ignore_list
-        self.llm_model = app_config.irc_llm_model
-        # TODO: maybe just have fcns use env vars directly
-        self.wolfram_api_key = app_config.wolfram_api_key
-        self.odds_api_key = app_config.odds_api_key
-        self.llm_api_key = app_config.llm_api_key
-
-        self.project_root = app_config.project_root
-        self.user_logs_path = app_config.user_logs_path
-
-        raw_ignore = getattr(app_config, "ignore_list", "") or ""
-        self.ignore_list = {
-            n.lower().strip() for n in raw_ignore.split(",") if n.strip()
-        }
 
         self._sock: "ssl.SSLSocket | None" = None
         self._stop_event = gevent.event.Event()
+        self._app_config = app_config
 
     def start(self):
         """Connect and start the main listen loop, reconnecting as needed."""
         self._connect()
         gevent.sleep(1) # small delay to ensure connection is fully established
-        self._writer = Writer(self._sock, self._stop_event)
-        self._dispatcher = Dispatcher(
-            self._writer.inbox,
-            self.nick,
-            self.main_channel,
-            self.admin_nick,
-            self.ignore_list,
-            self.llm_model,
-            self.llm_api_key,
-            self.project_root,
-            self.user_logs_path,
+        self._writer = Writer(
+            self._sock,
             self._stop_event
         )
-        self._listener = Listener(self._dispatcher.inbox, self._sock, self._stop_event)
+        self._dispatcher = Dispatcher(
+            self._writer.inbox,
+            self._stop_event,
+            self._app_config
+        )
+        self._listener = Listener(
+            self._dispatcher.inbox,
+            self._sock,
+            self._stop_event
+        )
         self._writer.start()
         self._dispatcher.start()
         self._listener.start()

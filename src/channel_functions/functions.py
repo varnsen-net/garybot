@@ -66,7 +66,7 @@ def dot_spaghetti():
     return random.choice(SPAGHETTI_LYRICS)
 
 
-def dot_ask(user_logs_path, target, word_count, word_list):
+def dot_ask(queried_nick, target, user_logs_path):
     """
     Fetch a random line from a requested user's message history.
 
@@ -74,10 +74,6 @@ def dot_ask(user_logs_path, target, word_count, word_list):
     :raises: FileNotFoundError: If the user's message history cannot be found.
     """
     try:
-        helpers.param_check(word_count,
-                            required_params=1,
-                            correct_syntax=CORRECT_SYNTAX['.ask'])
-        queried_nick = word_list[1]
         with sqlite3.connect(user_logs_path) as db:
             results = db.execute("""
                 SELECT message

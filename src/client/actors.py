@@ -77,6 +77,7 @@ class Dispatcher(gevent.Greenlet):
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically")
     _REASON_REGEX = re.compile(r"\breason\b")
+    _DOTASK_REGEX = re.compile(r"^\.ask\s+(.+)")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -85,29 +86,20 @@ class Dispatcher(gevent.Greenlet):
 
     def __init__(self,
                  outbox,
-                 nick,
-                 main_channel,
-                 admin_nick,
-                 ignore_list,
-                 llm_model,
-                 llm_api_key,
-                 project_root,
-                 user_logs_path,
-                 stop_event):
+                 stop_event,
+                 app_config):
         gevent.Greenlet.__init__(self)
         self.inbox = Queue()
         self.outbox = outbox
-        self.nick = nick
-        self.main_channel = main_channel
-        self.admin_nick = admin_nick
-        self.ignore_list = ignore_list
-        self.llm_model = llm_model
-        self.llm_api_key = llm_api_key
-        self.project_root = project_root
-        self.user_logs_path = user_logs_path
+        self.nick = app_config.irc_nick
+        self.main_channel = app_config.irc_main_channel
+        self.admin_nick = app_config.irc_admin_nick
+        self.ignore_list = {n.lower().strip() for n in app_config.irc_ignore_list.split(",") if n.strip()}
+
         self._pool = Pool(10)
         self._running = False
         self._stop_event = stop_event
+        self._app_config = app_config
 
     def _dispatch(self, line):
         """"""
@@ -155,7 +147,7 @@ class Dispatcher(gevent.Greenlet):
                     parsed.target,
                     parsed.message,
                     parsed.timestamp,
-                    self.user_logs_path,
+                    self._app_config,
                 )
             except Exception as exc:
                 logger.exception(f"Logging raised an exception: {exc}")
@@ -170,45 +162,39 @@ class Dispatcher(gevent.Greenlet):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.imagine_without_iron,
-                    parsed.target,
-                    parsed.message
+                    parsed.message,
                 )
             if self._REASON_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.reason_will_prevail,
-                    parsed.target
                 )
             if parsed.message.startswith(".spaghetti"):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_spaghetti,
-                    parsed.target,
                 )
-            if parsed.message.startswith(".ask"):
+            if m := self._DOTASK_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_ask,
+                    m.group(1),
                     parsed.target,
-                    self.user_logs_path,
-                    parsed.target,
-                    parsed.word_count,
-                    parsed.word_list,
+                    self._app_config.user_logs_path,
                 )
             if parsed.message.startswith(self.nick):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_arb,
-                    parsed.target,
                     parsed.nick,
                     parsed.target,
                     parsed.message,
-                    self.llm_api_key.get_secret_value(),
-                    self.llm_model,
-                    self.user_logs_path,
+                    self._app_config.llm_api_key.get_secret_value(),
+                    self._app_config.irc_llm_model,
+                    self._app_config.user_logs_path,
                     self.main_channel,
-                    self.project_root,
-                    self.nick
+                    self._app_config.project_root,
+                    self.nick,
                 )
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")
@@ -269,15 +255,15 @@ class Dispatcher(gevent.Greenlet):
             return False
         return True
 
-    def _run_function(self, func, target, *args, **kwargs):
+    def _run_function(self, func, *args, **kwargs):
         """"""
         try:
             response = func(*args, **kwargs)
             if response:
-                self.outbox.put(f"PRIVMSG {target} :{response}")
+                self.outbox.put(f"PRIVMSG {self.main_channel} :{response}")
         except Exception as e:
             logger.exception(f"Error in handler function: {e}")
-            self.outbox.put(f"PRIVMSG {target} :Sorry, an error occurred while processing your request.")
+            self.outbox.put(f"PRIVMSG {self.main_channel} :Sorry, an error occurred while processing your request.")
 
     def _run(self):
         """"""

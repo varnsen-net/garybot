@@ -9,8 +9,9 @@ CREATE TABLE user_logs (
 import sqlite3
 
 
-def irc_logger(nick, target, message, timestamp, user_logs_path):
+def irc_logger(nick, target, message, timestamp, app_config):
     """Create table if it doesn't exist, then insert log into database."""
+    user_logs_path = app_config.user_logs_path
     if not message.startswith('.'):
         conn = sqlite3.connect(user_logs_path)
         c = conn.cursor()
