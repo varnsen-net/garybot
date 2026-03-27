@@ -146,20 +146,26 @@ class Dispatcher(gevent.Greenlet):
             self._stop_event.set()
             return
 
+        # log message
+        if parsed.command == "PRIVMSG" and parsed.target == self.main_channel:
+            try:
+                self._pool.spawn(
+                    irc_logger,
+                    parsed.nick,
+                    parsed.target,
+                    parsed.message,
+                    parsed.timestamp,
+                    self.user_logs_path,
+                )
+            except Exception as exc:
+                logger.exception(f"Logging raised an exception: {exc}")
+
         # filter out messages we don't care about
         if not self._should_dispatch(parsed):
             return
 
         # dispatch to handler
         try:
-            self._pool.spawn(
-                irc_logger,
-                parsed.nick,
-                parsed.target,
-                parsed.message,
-                parsed.timestamp,
-                self.user_logs_path,
-            )
             if self._IMAGINE_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
