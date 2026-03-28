@@ -174,11 +174,11 @@ class Dispatcher(gevent.Greenlet):
                     self._run_function,
                     channel_functions.dot_spaghetti,
                 )
-            if m := self._DOTASK_REGEX.search(parsed.message):
+            if self._DOTASK_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_ask,
-                    m.group(1),
+                    parsed.word_list[1],
                     parsed.target,
                     self._app_config.user_logs_path,
                 )
