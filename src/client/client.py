@@ -24,6 +24,7 @@ from gevent.queue import Queue
 from gevent.pool import Pool
 
 from src.client.actors import Listener, Dispatcher, Writer
+from src.client.logger import Logger
 
 
 class IRCClient:
@@ -54,25 +55,32 @@ class IRCClient:
         gevent.sleep(1) # small delay to ensure connection is fully established
         self._writer = Writer(
             self._sock,
-            self._stop_event
+            self._stop_event,
+        )
+        self._logger = Logger(
+            self._stop_event,
+            self._app_config,
         )
         self._dispatcher = Dispatcher(
-            self._writer.inbox,
+            self._writer,
+            self._logger,
             self._stop_event,
-            self._app_config
+            self._app_config,
         )
         self._listener = Listener(
-            self._dispatcher.inbox,
+            self._dispatcher,
             self._sock,
-            self._stop_event
+            self._stop_event,
         )
         self._writer.start()
+        self._logger.start()
         self._dispatcher.start()
         self._listener.start()
         gevent.joinall([
             self._writer,
+            self._logger,
             self._dispatcher,
-            self._listener
+            self._listener,
         ])
         self._disconnect()
 

@@ -15,7 +15,6 @@ from gevent.queue import Queue, Empty
 from gevent.pool import Pool
 from loguru import logger
 
-from src.client.logger import irc_logger
 import src.channel_functions.functions as channel_functions
 
 
@@ -26,9 +25,9 @@ class Listener(gevent.Greenlet):
 
     _BUFFER_SIZE = 4096
 
-    def __init__(self, outbox, socket, stop_event, encoding='utf-8'):
+    def __init__(self, dispatcher, socket, stop_event, encoding='utf-8'):
         gevent.Greenlet.__init__(self)
-        self.outbox = outbox
+        self._dispatcher = dispatcher
         self._socket = socket
         self._encoding = encoding
         self._recv_buffer = ""
@@ -61,7 +60,7 @@ class Listener(gevent.Greenlet):
                 for line in self._recv_lines():
                     line = line.strip()
                     if line:
-                        self.outbox.put(line)
+                        self._dispatcher.inbox.put(line)
             except OSError as e:
                 if not self._stop_event.is_set():
                     logger.error(f"Listener error: {e}")
@@ -85,12 +84,12 @@ class Dispatcher(gevent.Greenlet):
     ])
 
     def __init__(self,
-                 outbox,
+                 writer,
+                 logger,
                  stop_event,
                  app_config):
         gevent.Greenlet.__init__(self)
         self.inbox = Queue()
-        self.outbox = outbox
         self.nick = app_config.irc_nick
         self.main_channel = app_config.irc_main_channel
         self.admin_nick = app_config.irc_admin_nick
@@ -100,6 +99,8 @@ class Dispatcher(gevent.Greenlet):
         self._running = False
         self._stop_event = stop_event
         self._app_config = app_config
+        self._writer = writer
+        self._logger = logger
 
     def _dispatch(self, line):
         """"""
@@ -108,7 +109,7 @@ class Dispatcher(gevent.Greenlet):
         ping_match = self._PING_RE.match(line)
         if ping_match:
             server = ping_match.group(1)
-            self.outbox.put(f"PONG :{server}")
+            self._writer.inbox.put(f"PONG :{server}")
             return
 
         # rejoin if kicked
@@ -118,7 +119,7 @@ class Dispatcher(gevent.Greenlet):
             if kicked_nick.lower() == self.nick.lower():
                 logger.warning(f"Kicked from {self.main_channel} — rejoining...")
                 gevent.sleep(2)
-                self.outbox.put(f"JOIN {self.main_channel}")
+                self._writer.inbox.put(f"JOIN {self.main_channel}")
             return
 
         # parse user message
@@ -140,17 +141,7 @@ class Dispatcher(gevent.Greenlet):
 
         # log message
         if parsed.command == "PRIVMSG" and parsed.target == self.main_channel:
-            try:
-                self._pool.spawn(
-                    irc_logger,
-                    parsed.nick,
-                    parsed.target,
-                    parsed.message,
-                    parsed.timestamp,
-                    self._app_config,
-                )
-            except Exception as exc:
-                logger.exception(f"Logging raised an exception: {exc}")
+            self._logger.inbox.put(parsed)
 
         # filter out messages we don't care about
         if not self._should_dispatch(parsed):
@@ -260,10 +251,10 @@ class Dispatcher(gevent.Greenlet):
         try:
             response = func(*args, **kwargs)
             if response:
-                self.outbox.put(f"PRIVMSG {self.main_channel} :{response}")
+                self._writer.inbox.put(f"PRIVMSG {self.main_channel} :{response}")
         except Exception as e:
             logger.exception(f"Error in handler function: {e}")
-            self.outbox.put(f"PRIVMSG {self.main_channel} :Sorry, an error occurred while processing your request.")
+            self._writer.inbox.put(f"PRIVMSG {self.main_channel} :Sorry, an error occurred while processing your request.")
 
     def _run(self):
         """"""
