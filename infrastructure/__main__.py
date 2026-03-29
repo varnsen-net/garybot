@@ -120,6 +120,7 @@ if __name__ == "__main__":
         'wolfram_api_key': app_config.require_secret("wolfram_api_key"),
         'odds_api_key': app_config.require_secret("odds_api_key"),
         'llm_api_key': app_config.require_secret("llm_api_key"),
+        'nasa_api_key': app_config.require_secret("nasa_api_key"),
     }
     dot_env_file = pulumi.Output.all(**app_config_dict).apply(
         lambda cfg: base64.b64encode(
