@@ -1,24 +1,28 @@
 import random
 import requests
-import isodate
 import urllib
 
 import sqlite3
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
-from gevent import sleep
-
-import src.channel_functions.helpers as helpers
-import src.channel_functions.exceptions as exceptions
-
-
-CORRECT_SYNTAX = {'.ask': '.ask [nick]',
-                  '.wa' : '.wa [query]'}
 
 
 class BotResponse(BaseModel):
-    """"""
+    """Structured schema for the IRC bot's reply to a user message.
+ 
+    Captures the original message context alongside the bot's response
+    in multiple formats, including a reversed-text variant used for output.
+ 
+    Attributes:
+        user_nick: IRC nick of the user who sent the message.
+        user_message: The raw message sent by the user.
+        bot_reply_intent: The intended meaning or goal of the bot's reply,
+            used as an intermediate reasoning step.
+        bot_reply_normal: The bot's reply written in plain text.
+        bot_reply_reverse_text: The bot's reply with characters in reverse
+            order, which is reversed back to normal before sending.
+    """
     user_nick: str = Field(description="The IRC nick of the user who sent the message.")
     user_message: str = Field(description="The message sent by the user.")
     bot_reply_intent: str = Field(description="The idea or intention behind the bot's reply.")
@@ -27,12 +31,11 @@ class BotResponse(BaseModel):
 
 
 def imagine_without_iron(message):
-    """
-    Randomize the case of each letter of the user's message.
-    
-    :param str message: The user's message.
-    :returns: None
-    :rtype: None
+    """Return the message with each character's case randomized.
+ 
+    :param str message: The input string to randomize.
+    :returns: The message with randomly mixed casing.
+    :rtype: str
     """
     return "".join(random.choice([f.upper(),f]) for f in message)
 
@@ -43,7 +46,11 @@ def reason_will_prevail():
 
 
 def dot_spaghetti():
-    """Return a random spaghetti quote."""
+    """Return a random Eminem lyric with 'spaghetti' substituted in.
+ 
+    :returns: A randomly selected spaghetti lyric.
+    :rtype: str
+    """
     SPAGHETTI_LYRICS = (
         "Lose yourself in Mom's spaghetti. It's ready.",
         "You only get one spaghetti.",
@@ -67,11 +74,14 @@ def dot_spaghetti():
 
 
 def dot_ask(queried_nick, target, user_logs_path):
-    """
-    Fetch a random line from a requested user's message history.
-
-    :raises MissingArgsError: If the user did not provide a nick to query.
-    :raises: FileNotFoundError: If the user's message history cannot be found.
+    """Fetch a random message from a user's log history in a given channel.
+ 
+    :param str queried_nick: The IRC nick to retrieve a random quote from.
+    :param str target: The channel name to scope the query to.
+    :param pathlib.Path user_logs_path: Filesystem path to the SQLite user
+        log database.
+    :returns: A formatted quote string ``<nick> message``.
+    :rtype: str
     """
     try:
         with sqlite3.connect(user_logs_path) as db:
@@ -86,18 +96,20 @@ def dot_ask(queried_nick, target, user_logs_path):
             """, (queried_nick, target))
             selection = results.fetchone()[0]
         return f"<{queried_nick}> {selection}"
-    except exceptions.MissingArgsError as e:
-        return e
     except TypeError:
         return f"Sorry, I have no record of {queried_nick} in {target}."
 
 
 def dot_wolfram(nick, message, wolfram_api_key):
-    """
-    Query Wolfram Alpha for a response.
-    
-    :return: None
-    :rtype: None
+    """Query the Wolfram Alpha short-answer API and return the result.
+ 
+    :param str nick: The IRC nick of the requesting user, prepended to the
+        reply.
+    :param str message: The full command string; everything after the first
+        whitespace-delimited token is treated as the query.
+    :param str wolfram_api_key: A valid Wolfram Alpha API application key.
+    :returns: A string in the form ``nick: <wolfram response>``.
+    :rtype: str
     """
     api_key = f"&appid={wolfram_api_key}"
     url = "https://api.wolframalpha.com/v1/result?i="
@@ -107,16 +119,20 @@ def dot_wolfram(nick, message, wolfram_api_key):
     
     # format and return the response
     response = requests.get(apiquery)
+    if response.status_code != 200:
+        return f"{nick}: Sorry, I couldn't get an answer to that question."
     response = response.text[:400].replace("\n", "")
     return f"{nick}: {response}"
         
 
 def dot_apod(nick, nasa_api_key):
-    """
-    Fetch a random Astronomy Picture of the Day from NASA's API.
-
-    :return: None
-    :rtype: None
+    """Fetch a random NASA Astronomy Picture of the Day and format it for IRC.
+ 
+    :param str nick: The IRC nick of the requesting user, prepended to the
+        reply.
+    :param str nasa_api_key: A valid NASA API key.
+    :returns: A string in the form ``nick: <IRC-formatted APOD line>``.
+    :rtype: str
     """
     apod_api = f"https://api.nasa.gov/planetary/apod?api_key={nasa_api_key}&count=1"
     apod_data = requests.get(apod_api).json()[0]
@@ -130,10 +146,24 @@ def dot_apod(nick, nasa_api_key):
 
 def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
             project_root, client_nick):
-    """Responds to a message with a response from OpenAI's ChatGPT API.
-
-    :return: None
-    :rtype: None
+    """Generate a contextual reply using the Google Gemini API.
+ 
+    If the model does not finish cleanly (finish reason other than
+    ``"STOP"``), a fallback error string is returned instead.
+ 
+    :param str nick: IRC nick of the user sending the message.
+    :param str message: The user's message text.
+    :param str llm_api_key: Google Gemini API key.
+    :param str llm_model: Gemini model identifier (e.g. ``"gemini-2.0-flash"``).
+    :param str current_convo: Recent channel conversation, injected into the
+        system prompt for context.
+    :param pathlib.Path project_root: Root directory of the project, used to
+        locate the prompt file.
+    :param str client_nick: The bot's own IRC nick, injected into the system
+        prompt.
+    :returns: A string in the form ``nick: <reply>``, or an error message if
+        the model did not return a complete response.
+    :rtype: str
     """
     with open(project_root / 'prompt', 'r') as f:
         sys_msg = f.read().format(current_convo=current_convo, client_nick=client_nick)
