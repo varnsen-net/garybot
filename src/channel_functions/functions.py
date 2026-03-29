@@ -144,25 +144,13 @@ def dot_apod(message_payload, irc_client):
     return
 
 
-def dot_arb(nick, target, message, llm_api_key, llm_model, user_logs_path,
+def dot_arb(nick, target, message, llm_api_key, llm_model, current_convo,
             main_channel, project_root, client_nick):
     """Responds to a message with a response from OpenAI's ChatGPT API.
 
     :return: None
     :rtype: None
     """
-    with sqlite3.connect(user_logs_path) as db:
-        res = db.execute(
-            """SELECT nick,message
-            FROM user_logs
-            WHERE target = ?
-            ORDER BY timestamp DESC
-            LIMIT 100;"""
-            , (main_channel,)
-        ).fetchall()
-    res.reverse()
-    current_convo = "\n".join([f"<{r[0]}> {r[1]}"
-                               for r in res])
     with open(project_root / 'prompt', 'r') as f:
         sys_msg = f.read().format(current_convo=current_convo, client_nick=client_nick)
     client = genai.Client(api_key=llm_api_key)

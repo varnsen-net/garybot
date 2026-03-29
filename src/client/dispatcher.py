@@ -80,6 +80,7 @@ class Dispatcher(gevent.Greenlet):
         self.main_channel = app_config.irc_main_channel
         self.admin_nick = app_config.irc_admin_nick
         self.ignore_list = {n.lower().strip() for n in app_config.irc_ignore_list.split(",") if n.strip()}
+        self.current_convo = []
 
         self._pool = Pool(10)
         self._stop_event = stop_event
@@ -118,6 +119,9 @@ class Dispatcher(gevent.Greenlet):
         if parsed is None:
             return   # server notice, MODE, etc.
 
+        # update current conversation
+        self._update_current_convo(parsed.nick, parsed.message)
+
         # quit on admin exit code
         if (
             parsed.command == "PRIVMSG"
@@ -134,7 +138,7 @@ class Dispatcher(gevent.Greenlet):
             return
 
         # log message
-        if not parsed.message.startswith("."):
+        if not parsed.message.startswith((".", ",", "!")):
             self._logger.inbox.put(parsed)
 
         # dispatch to handler
@@ -172,7 +176,7 @@ class Dispatcher(gevent.Greenlet):
                     parsed.message,
                     self._app_config.llm_api_key.get_secret_value(),
                     self._app_config.irc_llm_model,
-                    self._app_config.user_logs_path,
+                    "\n".join(self.current_convo),
                     self.main_channel,
                     self._app_config.project_root,
                     self.nick,
@@ -199,7 +203,7 @@ class Dispatcher(gevent.Greenlet):
         nick, rest = prefix.split("!", 1)
         ident, host = rest.split("@", 1) if "@" in rest else (rest, "")
 
-        words = [w for w in message.split() if w] # collapse multiple spaces
+        words = [w for w in message.split() if w]
         return self.ParsedMessage(
             nick=nick,
             ident=ident,
@@ -211,6 +215,12 @@ class Dispatcher(gevent.Greenlet):
             word_count=len(words),
             timestamp=timestamp,
         )
+
+    def _update_current_convo(self, nick, message):
+        """"""
+        self.current_convo.append(f"<{nick}>: {message}")
+        if len(self.current_convo) > 50:
+            self.current_convo.pop(0)
 
     def _should_dispatch(self, msg):
         """Return True only when a message is worth passing to the handler.
@@ -252,6 +262,7 @@ class Dispatcher(gevent.Greenlet):
         try:
             response = func(*args, **kwargs)
             if response:
+                self._update_current_convo(self.nick, response)
                 self._writer.inbox.put(f"PRIVMSG {self.main_channel} :{response}")
         except Exception as e:
             logger.exception(f"Error in handler function: {e}")
