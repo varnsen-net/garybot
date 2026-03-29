@@ -5,8 +5,6 @@ The dispatcher receives raw IRC lines from the reader, parses them (:nick!user@h
 The writer just sits on its inbox queue and drains it to the socket.
 """
 import time
-import socket
-import ssl
 import re
 from collections import namedtuple
 
@@ -18,61 +16,49 @@ from loguru import logger
 import src.channel_functions.functions as channel_functions
 
 
-_EXIT_CODE = "goodnight"
-
-
-class Listener(gevent.Greenlet):
-
-    _BUFFER_SIZE = 4096
-
-    def __init__(self, dispatcher, socket, stop_event, encoding='utf-8'):
-        gevent.Greenlet.__init__(self)
-        self._dispatcher = dispatcher
-        self._socket = socket
-        self._encoding = encoding
-        self._recv_buffer = ""
-        self._stop_event = stop_event
-
-    def _recv_lines(self):
-        """Read from the socket into a line buffer and return complete lines.
-
-        Raises OSError on disconnect so the caller can trigger reconnection.
-        """
-        try:
-            chunk = self._socket.recv(self._BUFFER_SIZE)
-        except socket.timeout:
-            return []    # nothing arrived — keep looping
-        if not chunk:
-            raise OSError("Server closed the connection")
-        try:
-            text = chunk.decode(self._encoding)
-        except UnicodeDecodeError:
-            text = chunk.decode("latin-1")
-        self._recv_buffer += text
-        *complete, self._recv_buffer = self._recv_buffer.split("\r\n")
-        return complete
-
-    def _run(self):
-        """Process incoming lines until an error or clean shutdown."""
-        logger.info("Listening...")
-        while not self._stop_event.is_set():
-            try:
-                for line in self._recv_lines():
-                    line = line.strip()
-                    if line:
-                        self._dispatcher.inbox.put(line)
-            except OSError as e:
-                if not self._stop_event.is_set():
-                    logger.error(f"Listener error: {e}")
-                    raise
-                break
-
 
 class Dispatcher(gevent.Greenlet):
+    """The Dispatcher receives raw IRC lines from the reader, parses them
+    (:nick!user@host PRIVMSG #channel :hello), and then decides what to do. For
+    most messages it does nothing, but for commands it might spawn a new
+    short-lived greenlet to handle that command and put a response onto the
+    writer's inbox.
 
+    Attributes:
+        inbox (Queue): A gevent Queue where raw IRC lines are received from the
+            reader.
+        nick (str): The bot's own nickname, used for command parsing.
+        main_channel (str): The channel the bot is active in, used for filtering
+            messages and sending responses.
+        admin_nick (str): The nickname of the admin user, whose messages can
+            trigger a shutdown when they contain the exit code.
+        ignore_list (set[str]): A set of lowercase nicknames to ignore.
+        _pool (Pool): A gevent Pool for running handler functions concurrently.
+        _stop_event (Event): A gevent Event that signals the dispatcher to stop.
+        _app_config (AppConfig): The application configuration object.
+        _writer (Writer): A reference to the Writer actor, used to send responses
+            back to the server.
+        _logger (Logger): A logger for logging messages and errors.
+        _EXIT_CODE (str): A special message that, when received from the admin user,
+            will trigger a shutdown of the dispatcher.
+        _USER_MSG_RE (Pattern): A regular expression pattern for parsing user-originated
+            messages in the format `:nick!ident@host COMMAND target :message`.
+        _PING_RE (Pattern): A regular expression pattern for matching PING messages
+            from the server.
+        _IMAGINE_REGEX (Pattern): A regular expression pattern for detecting messages
+            that begin with the phrase "imagine unironically".
+        _REASON_REGEX (Pattern): A regular expression pattern for detecting messages
+            that contain the word "reason".
+        _DOTASK_REGEX (Pattern): A regular expression pattern for matching messages
+            that start with the command ".ask" followed by some text.
+        ParsedMessage (namedtuple): A named tuple class for representing parsed user messages,
+            with fields for nick, ident, host, command, target, message, word_list,
+            word_count, and timestamp.
+    """
+
+    _EXIT_CODE = "goodnight"
     # matches user-originated messages: `:nick!ident@host COMMAND target :message`
     _USER_MSG_RE = re.compile(r":(\S+!\S+@\S+) ([A-Z]+) (\S+) :(.*)")
-    # matches server PING: `PING :server`
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically")
     _REASON_REGEX = re.compile(r"\breason\b")
@@ -96,14 +82,18 @@ class Dispatcher(gevent.Greenlet):
         self.ignore_list = {n.lower().strip() for n in app_config.irc_ignore_list.split(",") if n.strip()}
 
         self._pool = Pool(10)
-        self._running = False
         self._stop_event = stop_event
         self._app_config = app_config
         self._writer = writer
         self._logger = logger
 
     def _dispatch(self, line):
-        """"""
+        """Dispatch a raw IRC line received from the reader.
+
+        :param str line: The raw IRC line to dispatch.
+        :return: None
+        :rtype: None
+        """
 
         # ping pong
         ping_match = self._PING_RE.match(line)
@@ -133,19 +123,19 @@ class Dispatcher(gevent.Greenlet):
             parsed.command == "PRIVMSG"
             and parsed.nick
             and parsed.nick.lower() == self.admin_nick.lower()
-            and parsed.message == _EXIT_CODE
+            and parsed.message == self._EXIT_CODE
         ):
             logger.info(f"Exit code received from {parsed.nick}. Shutting down.")
             self._stop_event.set()
             return
 
-        # log message
-        if parsed.command == "PRIVMSG" and parsed.target == self.main_channel:
-            self._logger.inbox.put(parsed)
-
         # filter out messages we don't care about
         if not self._should_dispatch(parsed):
             return
+
+        # log message
+        if not parsed.message.startswith("."):
+            self._logger.inbox.put(parsed)
 
         # dispatch to handler
         try:
@@ -247,7 +237,18 @@ class Dispatcher(gevent.Greenlet):
         return True
 
     def _run_function(self, func, *args, **kwargs):
-        """"""
+        """Run a handler function and put its response onto the writer's inbox.
+
+        This method is a wrapper around handler functions to catch exceptions and
+        ensure that any errors are logged and a user-friendly message is sent back
+        to the channel instead of crashing the dispatcher.
+
+        :param callable func: The handler function to run.
+        :param args: Positional arguments to pass to the handler function.
+        :param kwargs: Keyword arguments to pass to the handler function.
+        :return: None
+        :rtype: None
+        """
         try:
             response = func(*args, **kwargs)
             if response:
@@ -257,41 +258,19 @@ class Dispatcher(gevent.Greenlet):
             self._writer.inbox.put(f"PRIVMSG {self.main_channel} :Sorry, an error occurred while processing your request.")
 
     def _run(self):
-        """"""
+        """The main loop of the dispatcher greenlet. Continuously reads lines
+        from the inbox and dispatches them until the stop event is set.
+
+        :return: None
+        :rtype: None
+        """
+        logger.info("Dispatcher started.")
         while not self._stop_event.is_set():
             try:
                 line = self.inbox.get(timeout=1)
             except Empty:
                 continue
-            self._dispatch(line)
-
-
-class Writer(gevent.Greenlet):
-
-    def __init__(self, socket, stop_event, encoding='utf-8'):
-        gevent.Greenlet.__init__(self)
-        self.inbox = Queue()
-        self._socket = socket
-        self._encoding = encoding
-        self._running = False
-        self._stop_event = stop_event
-
-    def _send(self, line):
-        """Encode and send a single IRC line (newline appended automatically)."""
-        if not self._socket:
-            raise OSError("Not connected")
-        raw = (line + "\r\n").encode(self._encoding)
-        try:
-            self._socket.sendall(raw)
-        except (OSError, ssl.SSLError) as exc:
-            logger.error(f"Send failed: {exc}")
-            raise
-
-    def _run(self):
-        """"""
-        while not self._stop_event.is_set():
             try:
-                line = self.inbox.get(timeout=1)
-            except Empty:
-                continue
-            self._send(line)
+                self._dispatch(line)
+            except Exception as e:
+                logger.exception(f"Error dispatching line: {line}\nException: {e}")

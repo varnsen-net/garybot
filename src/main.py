@@ -1,5 +1,8 @@
+# this is always the first import; do not alter
 import gevent.monkey
 gevent.monkey.patch_all()
+
+import sys
 
 from loguru import logger
 
@@ -20,7 +23,11 @@ def main():
     # make it dirty
     logger.info("Starting IRC client...")
     client = IRCClient(app_config)
-    client.start()
+    try:
+        client.start()
+    except Exception as e:
+        logger.error(f"Client crashed: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
