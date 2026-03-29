@@ -60,8 +60,9 @@ class Dispatcher(gevent.Greenlet):
     # matches user-originated messages: `:nick!ident@host COMMAND target :message`
     _USER_MSG_RE = re.compile(r":(\S+!\S+@\S+) ([A-Z]+) (\S+) :(.*)")
     _PING_RE = re.compile(r"^PING :(.+)$")
-    _IMAGINE_REGEX = re.compile(r"^imagine unironically")
+    _IMAGINE_REGEX = re.compile(r"^imagine unironically\b")
     _REASON_REGEX = re.compile(r"\breason\b")
+    _DOT_APOD_REGEX = re.compile(r"^\.apod\b")
     _DOTASK_REGEX = re.compile(r"^\.ask\s+(.+)")
 
     ParsedMessage = namedtuple("ParsedMessage", [
@@ -167,17 +168,22 @@ class Dispatcher(gevent.Greenlet):
                     parsed.target,
                     self._app_config.user_logs_path,
                 )
+            if self._DOT_APOD_REGEX.search(parsed.message):
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_apod,
+                    parsed.nick,
+                    self._app_config.nasa_api_key.get_secret_value(),
+                )
             if parsed.message.startswith(self.nick):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_arb,
                     parsed.nick,
-                    parsed.target,
                     parsed.message,
                     self._app_config.llm_api_key.get_secret_value(),
                     self._app_config.irc_llm_model,
                     "\n".join(self.current_convo),
-                    self.main_channel,
                     self._app_config.project_root,
                     self.nick,
                 )
@@ -219,8 +225,7 @@ class Dispatcher(gevent.Greenlet):
     def _update_current_convo(self, nick, message):
         """"""
         self.current_convo.append(f"<{nick}>: {message}")
-        if len(self.current_convo) > 50:
-            self.current_convo.pop(0)
+        self.current_convo = self.current_convo[-50:]
 
     def _should_dispatch(self, msg):
         """Return True only when a message is worth passing to the handler.

@@ -124,28 +124,26 @@ def dot_wolfram(message_payload, irc_client, app_config):
     return
         
 
-def dot_apod(message_payload, irc_client):
+def dot_apod(nick, nasa_api_key):
     """
     Fetch a random Astronomy Picture of the Day from NASA's API.
 
-    :param dict message_payload: The message payload parsed from the raw message.
-    :param object irc_client: The IRC client object (see: src/comms.py).
     :return: None
     :rtype: None
     """
-    apod_api = "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&count=1"
+    apod_api = f"https://api.nasa.gov/planetary/apod?api_key={nasa_api_key}&count=1"
     apod_data = requests.get(apod_api).json()[0]
     header = " AP🪐D "
     date = apod_data['date']
     title = apod_data['title']
-    url = apod_data['hdurl']
+    # url = apod_data['hdurl']
+    url = f"https://apod.nasa.gov/apod/ap{date[2:].replace('-','')}.html"
     response = f"15,01{header} 14{date} 04{title}: 10{url}"
-    irc_client.send_message(response)
-    return
+    return f"{nick}: {response}"
 
 
-def dot_arb(nick, target, message, llm_api_key, llm_model, current_convo,
-            main_channel, project_root, client_nick):
+def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
+            project_root, client_nick):
     """Responds to a message with a response from OpenAI's ChatGPT API.
 
     :return: None

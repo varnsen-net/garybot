@@ -14,6 +14,7 @@ Garybot uses a three-actor concurrency model built on gevent greenlets:
 
 - **Listener** — sits on the raw SSL socket, reads lines into a buffer, and puts complete lines onto a queue.
 - **Dispatcher** — receives raw IRC lines, parses them, and spawns short-lived greenlets to handle commands. Puts responses onto the Writer's inbox.
+- **Logger** — drains its inbox into an SQLite database for logging and later retrieval.
 - **Writer** — drains its inbox queue to the socket.
 
 Each actor is a `gevent.Greenlet`. The client manages the lifecycle of all three and handles reconnection automagically.
@@ -21,7 +22,6 @@ Each actor is a `gevent.Greenlet`. The client manages the lifecycle of all three
 ## Features
 
 - SSL/TLS connection
-- Auto-reconnect with configurable delay and max attempts
 - Auto-rejoin on kick
 - Admin exit code for clean remote shutdown
 - Per-user message logging to SQLite
@@ -51,19 +51,11 @@ Garybot is configured via environment variables or a `.env` file in the project 
 
 ## Commands
 
-| Trigger | Description |
-|---|---|
-| `.ask <nick>` | Return a random line from the given user |
-| `<botnick>: <message>` | Address the bot directly for an LLM response |
-| `.spaghetti` | Spaghetti |
-| `imagine unironically` | Triggered response |
-| `reason` (as a word) | Triggered response |
-
-Sending the configured exit code as a private message from the admin nick will shut the bot down cleanly.
+See COMMANDS.md for a list of available commands and triggers.
 
 ## User Logs
 
-Channel messages are logged to a SQLite database (excluding lines starting with `.`):
+Channel messages from users are logged to a SQLite database:
 
 ```
 data/user-logs/user_logs.db

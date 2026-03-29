@@ -36,6 +36,7 @@ class AppSettings(BaseSettings):
     wolfram_api_key: SecretStr = Field()
     odds_api_key: SecretStr = Field()
     llm_api_key: SecretStr = Field()
+    nasa_api_key: SecretStr = Field()
 
     project_root: Path = Field(default=PROJ_ROOT.resolve())
     user_logs_path: Path = Field(default=PROJ_ROOT.resolve() / "data" / "user_logs" / "user_logs.db")
