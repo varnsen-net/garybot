@@ -49,7 +49,7 @@ class Dispatcher(gevent.Greenlet):
             that begin with the phrase "imagine unironically".
         _REASON_REGEX (Pattern): A regular expression pattern for detecting messages
             that contain the word "reason".
-        _DOTASK_REGEX (Pattern): A regular expression pattern for matching messages
+        _DOT_ASK_REGEX (Pattern): A regular expression pattern for matching messages
             that start with the command ".ask" followed by some text.
         ParsedMessage (namedtuple): A named tuple class for representing parsed user messages,
             with fields for nick, ident, host, command, target, message, word_list,
@@ -62,8 +62,9 @@ class Dispatcher(gevent.Greenlet):
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically\b")
     _REASON_REGEX = re.compile(r"\breason\b")
+    _DOT_ASK_REGEX = re.compile(r"^\.ask\s+(.+)")
+    _DOT_WA_REGEX = re.compile(r"^\.wa\s+(.+)")
     _DOT_APOD_REGEX = re.compile(r"^\.apod\b")
-    _DOTASK_REGEX = re.compile(r"^\.ask\s+(.+)")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -160,13 +161,21 @@ class Dispatcher(gevent.Greenlet):
                     self._run_function,
                     channel_functions.dot_spaghetti,
                 )
-            if self._DOTASK_REGEX.search(parsed.message):
+            if self._DOT_ASK_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_ask,
                     parsed.word_list[1],
                     parsed.target,
                     self._app_config.user_logs_path,
+                )
+            if self._DOT_WA_REGEX.search(parsed.message):
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_wolfram,
+                    parsed.nick,
+                    parsed.message,
+                    self._app_config.wolfram_api_key.get_secret_value(),
                 )
             if self._DOT_APOD_REGEX.search(parsed.message):
                 self._pool.spawn(

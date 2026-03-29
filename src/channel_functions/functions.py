@@ -92,36 +92,23 @@ def dot_ask(queried_nick, target, user_logs_path):
         return f"Sorry, I have no record of {queried_nick} in {target}."
 
 
-def dot_wolfram(message_payload, irc_client, app_config):
+def dot_wolfram(nick, message, wolfram_api_key):
     """
     Query Wolfram Alpha for a response.
     
-    :param dict message_payload: The message payload parsed from the raw message.
     :return: None
     :rtype: None
     """
-    nick = message_payload['nick']
-    message = message_payload['message']
-    word_count = message_payload['word_count']
-    correct_syntax = CORRECT_SYNTAX['.wa']
-    wolfram_api_key = app_config.wolfram_api_key
-    try:
-        helpers.param_check(word_count,
-                            required_params=1,
-                            correct_syntax=correct_syntax)
-        api_key = f"&appid={wolfram_api_key}"
-        url = "https://api.wolframalpha.com/v1/result?i="
-        question = message.split(' ',1)[1]
-        question = urllib.parse.quote_plus(question)
-        apiquery = url + question + api_key + '&units=metric'
-        
-        # format and return the response
-        response = requests.get(apiquery)
-        response = response.text[:400].replace("\n", "")
-        irc_client.send_message(response, nick)
-    except exceptions.MissingArgsError as e:
-        irc_client.send_message(e, nick)
-    return
+    api_key = f"&appid={wolfram_api_key}"
+    url = "https://api.wolframalpha.com/v1/result?i="
+    question = message.split(' ',1)[1]
+    question = urllib.parse.quote_plus(question)
+    apiquery = url + question + api_key + '&units=metric'
+    
+    # format and return the response
+    response = requests.get(apiquery)
+    response = response.text[:400].replace("\n", "")
+    return f"{nick}: {response}"
         
 
 def dot_apod(nick, nasa_api_key):
@@ -136,7 +123,6 @@ def dot_apod(nick, nasa_api_key):
     header = " AP🪐D "
     date = apod_data['date']
     title = apod_data['title']
-    # url = apod_data['hdurl']
     url = f"https://apod.nasa.gov/apod/ap{date[2:].replace('-','')}.html"
     response = f"15,01{header} 14{date} 04{title}: 10{url}"
     return f"{nick}: {response}"

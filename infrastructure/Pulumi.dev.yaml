@@ -18,6 +18,6 @@ config:
   garybot:odds_api_key:
     secure: AAABABCOdH+g5NURkB97IDeBfA4Zw96wL+FtRvbE0Z+RvocjZZKWhdbORJy2WRAONFCFkP5qh7tOs5hX0rpvMw==
   garybot:wolfram_api_key:
-    secure: AAABAMSsqitQoRhc1Ti1bII5CxMrqgnS1TobCka8vB8KWBNctfXYdZgrqztlqiJqzQ==
+    secure: AAABAHTMKcO4f9Ir+MKUTjfyws4QwYXH++PtBoKdjdNJBHs/1Xmvyara
   garybot:nasa_api_key:
     secure: AAABAKwVH7gaxonDFAHGDJS8yBZVSiYUFm4FbbI5OWpjaibZpVWm0+ROZGkEMFt7+pklEDMrzkiaqikYzFUGJY+4Ofss4IDZ
