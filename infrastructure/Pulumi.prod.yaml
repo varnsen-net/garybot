@@ -19,3 +19,5 @@ config:
     secure: AAABABjbhDnNF0XPaLLig8zegebWlWCOqN8tsABXZfOUFV1D3ruY1KBGs1EJ2NgN2A==
   vultr:apiKey:
     secure: AAABACSltW4zcH/I7r+m/X49gwhHW6LoMvUkC0JX5RRDgjbhZghFx/YBYbmpTs4eYgkeqKvd+vXaLG5ZZXm3m4RqLKY=
+  garybot:nasa_api_key:
+    secure: AAABAKcXt0HBx3zrdxpmbxvdqIXyKldQVy4eRocDEnszxB023nqhKqvq3gvJ83Wn59+CQBkt1MEM3NZTiYjRcW/hPsVCGodi
