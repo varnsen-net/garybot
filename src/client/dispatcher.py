@@ -65,6 +65,7 @@ class Dispatcher(gevent.Greenlet):
     _DOT_ASK_REGEX = re.compile(r"^\.ask\s+(.+)")
     _DOT_WA_REGEX = re.compile(r"^\.wa\s+(.+)")
     _DOT_APOD_REGEX = re.compile(r"^\.apod\b")
+    _DOT_TRIVIA_REGEX = re.compile(r"^\.tr\b")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -195,6 +196,12 @@ class Dispatcher(gevent.Greenlet):
                     "\n".join(self.current_convo),
                     self._app_config.project_root,
                     self.nick,
+                )
+            if parsed.message.startswith(".tr"):
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_trivia,
+                    parsed.nick,
                 )
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")

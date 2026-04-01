@@ -1,6 +1,7 @@
 import random
 import requests
 import urllib
+from html import unescape
 
 import sqlite3
 from google import genai
@@ -149,7 +150,7 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
     """Generate a contextual reply using the Google Gemini API.
  
     If the model does not finish cleanly (finish reason other than
-    ``"STOP"``), a fallback error string is returned instead.
+    `"STOP"`), a fallback error string is returned instead.
  
     :param str nick: IRC nick of the user sending the message.
     :param str message: The user's message text.
@@ -189,4 +190,18 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
     return f"{nick}: {reply}"
 
     
-
+def dot_trivia(nick):
+    """"""
+    trivia_api = "https://opentdb.com/api.php?amount=1&difficulty=medium&type=multiple"
+    response = requests.get(trivia_api).json()
+    if response['response_code'] != 0:
+        return f"{nick}: Sorry, I couldn't fetch a trivia question right now."
+    question_data = response['results'][0]
+    category = question_data['category']
+    question = unescape(question_data['question'])
+    correct_answer = unescape(question_data['correct_answer'])
+    incorrect_answers = [unescape(ans) for ans in question_data['incorrect_answers']]
+    options = incorrect_answers + [correct_answer]
+    random.shuffle(options)
+    options_str = ' '.join(f"({l}) {opt}" for l, opt in zip('abcd', options))
+    return f"{nick}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
