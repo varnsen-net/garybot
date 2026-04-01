@@ -192,7 +192,8 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
     
 def dot_trivia(nick):
     """"""
-    trivia_api = "https://opentdb.com/api.php?amount=1&difficulty=medium&type=multiple"
+    n = random.randint(9,32)  # general knowledge to cartoons
+    trivia_api = f"https://opentdb.com/api.php?amount=1&difficulty=medium&type=multiple&category={n}"
     response = requests.get(trivia_api).json()
     if response['response_code'] != 0:
         return f"{nick}: Sorry, I couldn't fetch a trivia question right now."
