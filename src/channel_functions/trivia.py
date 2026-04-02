@@ -50,7 +50,7 @@ class Trivia(gevent.Greenlet):
         player = turn[0]
         regex_match = turn[1].group(2) # group 2 is the answer part of the regex
         if not self._deck:
-            params = {"limit": 30, "difficulties": "medium"}
+            params = {"limit": 30, "difficulties": "medium,hard"}
             response = requests.get(self._trivia_url, params=params)
             if response.status_code != 200:
                 logger.error(f"Failed to fetch trivia questions: {response.status_code}")
