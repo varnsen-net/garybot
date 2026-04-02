@@ -3,6 +3,7 @@ import gevent.monkey
 gevent.monkey.patch_all()
 
 import sys
+import traceback
 
 from loguru import logger
 
@@ -27,6 +28,7 @@ def main():
         client.start()
     except Exception as e:
         logger.error(f"Client crashed: {e}")
+        logger.error(traceback.format_exc())
         sys.exit(1)
 
 

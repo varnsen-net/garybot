@@ -190,19 +190,3 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
     return f"{nick}: {reply}"
 
     
-def dot_trivia(nick):
-    """"""
-    n = random.randint(9,32)  # general knowledge to cartoons
-    trivia_api = f"https://opentdb.com/api.php?amount=1&difficulty=medium&type=multiple&category={n}"
-    response = requests.get(trivia_api).json()
-    if response['response_code'] != 0:
-        return f"{nick}: Sorry, I couldn't fetch a trivia question right now."
-    question_data = response['results'][0]
-    category = question_data['category']
-    question = unescape(question_data['question'])
-    correct_answer = unescape(question_data['correct_answer'])
-    incorrect_answers = [unescape(ans) for ans in question_data['incorrect_answers']]
-    options = incorrect_answers + [correct_answer]
-    random.shuffle(options)
-    options_str = ' '.join(f"({l}) {opt}" for l, opt in zip('abcd', options))
-    return f"{nick}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"

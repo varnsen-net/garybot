@@ -15,10 +15,7 @@ import ssl
 import gevent
 from loguru import logger
 
-from src.client.logger import Logger
-from src.client.writer import Writer
-from src.client.dispatcher import Dispatcher
-from src.client.listener import Listener
+from src.actors.build import build_actors
 
 
 class IRCClient:
@@ -52,30 +49,9 @@ class IRCClient:
         self._connect()
         gevent.sleep(1) # small delay to ensure connection is fully established
         logger.info("Starting actors...")
-        self._writer = Writer(
-            self._sock,
-            self._stop_event,
-        )
-        self._logger = Logger(
-            self._stop_event,
-            self._app_config,
-        )
-        self._dispatcher = Dispatcher(
-            self._writer,
-            self._logger,
-            self._stop_event,
-            self._app_config,
-        )
-        self._listener = Listener(
-            self._dispatcher,
-            self._sock,
-            self._stop_event,
-        )
-        self._writer.start()
-        self._logger.start()
-        self._dispatcher.start()
-        self._listener.start()
-        actors = [self._writer, self._logger, self._dispatcher, self._listener]
+        actors = build_actors(self._sock, self._stop_event, self._app_config)
+        for actor in actors:
+            actor.start()
         gevent.joinall(actors, raise_error=True)
         self._disconnect()
 
@@ -104,4 +80,3 @@ class IRCClient:
             except OSError:
                 pass
             self._sock = None
-

@@ -57,15 +57,14 @@ class Dispatcher(gevent.Greenlet):
     """
 
     _EXIT_CODE = "goodnight"
-    # matches user-originated messages: `:nick!ident@host COMMAND target :message`
-    _USER_MSG_RE = re.compile(r":(\S+!\S+@\S+) ([A-Z]+) (\S+) :(.*)")
+    _USER_MSG_RE = re.compile(r":(\S+!\S+@\S+) ([A-Z]+) (\S+) :(.*)") # `:nick!ident@host COMMAND target :message`
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically\b")
     _REASON_REGEX = re.compile(r"\breason\b")
     _DOT_ASK_REGEX = re.compile(r"^\.ask\s+(.+)")
     _DOT_WA_REGEX = re.compile(r"^\.wa\s+(.+)")
     _DOT_APOD_REGEX = re.compile(r"^\.apod\b")
-    _DOT_TRIVIA_REGEX = re.compile(r"^\.tr\b")
+    _DOT_TRIVIA_REGEX = re.compile(r"^\.tr(ivia)?(\s*[AaBbCcDd]+)?")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -75,6 +74,7 @@ class Dispatcher(gevent.Greenlet):
     def __init__(self,
                  writer,
                  logger,
+                 trivia,
                  stop_event,
                  app_config):
         gevent.Greenlet.__init__(self)
@@ -90,6 +90,7 @@ class Dispatcher(gevent.Greenlet):
         self._app_config = app_config
         self._writer = writer
         self._logger = logger
+        self._trivia = trivia
 
     def _dispatch(self, line):
         """Dispatch a raw IRC line received from the reader.
@@ -197,12 +198,8 @@ class Dispatcher(gevent.Greenlet):
                     self._app_config.project_root,
                     self.nick,
                 )
-            if parsed.message.startswith(".tr"):
-                self._pool.spawn(
-                    self._run_function,
-                    channel_functions.dot_trivia,
-                    parsed.nick,
-                )
+            if match := self._DOT_TRIVIA_REGEX.search(parsed.message):
+                self._trivia.inbox.put((parsed.nick, match))
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")
 
