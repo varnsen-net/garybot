@@ -147,6 +147,10 @@ class Dispatcher(gevent.Greenlet):
 
         # dispatch to handler
         try:
+            if parsed.message.startswith(".help"):
+                self._writer.inbox.put(
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=71eb0e3db8454df1ae9dd8c223ef3664"
+                )
             if self._IMAGINE_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
