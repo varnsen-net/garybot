@@ -61,7 +61,7 @@ class Trivia(gevent.Greenlet):
         if not regex_match:
             category, question, options_str, correct_option = self._create_trivia_question()
             self._players[player]['current_answer'] = correct_option
-            self._players[player]['score'] -= 1  # Deduct a point for asking a question
+            self._players[player]['asked'] += 1
             reponse = f"{player}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
             self._writer.inbox.put(f"PRIVMSG {self._main_channel} :{reponse}")
             return
@@ -72,18 +72,7 @@ class Trivia(gevent.Greenlet):
 
     def _create_player(self, player):
         """"""
-        self._players[player] = {"score": 0, "current_answer": None}
-
-    def _compare_answers(self, player, player_answer):
-        """"""
-        if not self._players[player]['current_answer']:
-            reply = f"{player}: You don't have an active question. Use .tr[ivia] to get one."
-        elif player_answer == self._players[player]['current_answer']:
-            self._players[player]['score'] += 2
-            reply = f"{player}: Correct! Your score is now {self._players[player]['score']}."
-        else:
-            reply = f"{player}: Incorrect. The correct answer was ({self._players[player]['current_answer']}). Your score is {self._players[player]['score']}."
-        return reply
+        self._players[player] = {"asked": 0, "correct": 0, "current_answer": None}
 
     def _create_trivia_question(self):
         """"""
@@ -96,6 +85,24 @@ class Trivia(gevent.Greenlet):
         options_str = ' '.join(f"({l}) {opt}" for l, opt in zip('abcd', options))
         correct_option = 'abcd'[options.index(correct_answer)]
         return category, question, options_str, correct_option
+
+    def _compare_answers(self, player, player_answer):
+        """"""
+        if not self._players[player]['current_answer']:
+            reply = f"{player}: You don't have an active question. Use .tr[ivia] to get one."
+        elif player_answer == self._players[player]['current_answer']:
+            self._players[player]['correct'] += 1
+            reply = f"{player}: Correct! Your score is now {self._report_accuracy(player)}."
+        else:
+            reply = f"{player}: Incorrect. The correct answer was ({self._players[player]['current_answer']}). Your score is {self._report_accuracy(player)}."
+        return reply
+
+    def _report_accuracy(self, player):
+        """"""
+        asked = self._players[player]['asked']
+        correct = self._players[player]['correct']
+        accuracy = (correct / asked) * 100
+        return f"{int(accuracy)}% ({correct}/{asked})"
 
     def _run(self):
         logger.info("Trivia started.")
