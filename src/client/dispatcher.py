@@ -189,7 +189,7 @@ class Dispatcher(gevent.Greenlet):
                     channel_functions.dot_joke,
                     parsed.nick,
                 )
-            if trigger == self.nick:
+            if parsed.message.startswith(self.nick):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_arb,

@@ -14,7 +14,7 @@ config:
   garybot:llm_api_key:
     secure: AAABAIyVzpO607I8Cso7QEcF0li40XvusmadstGE62NQWDY2C4lx0x02Zp2rAxlvVUquojAW1XS0Q3ho9QZFHsyplG9I854=
   garybot:odds_api_key:
-    secure: AAABANpPvVFbkuaPSS14w7RmxM5GGtEY5aZf5u0U6V4v2lLFeDQnHtqdBkO+3OaNMWmi/fMi/1XZu2O7FMbVkA==
+    secure: AAABAKoCKRkuLiAmrpIHiQhweH8GfaOxp6ef4ydmyVaAYlBgIwNhDfFrIf0RJHOt57OC36J/c1EFCo2rnrcJMQ==
   garybot:wolfram_api_key:
     secure: AAABAAVu73rM2zTQYLIKxCxNU3nALMq6XOiEOUmj8RiOMOQjzaObQB/z
   vultr:apiKey:
