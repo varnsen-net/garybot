@@ -49,22 +49,15 @@ class Dispatcher(gevent.Greenlet):
             that begin with the phrase "imagine unironically".
         _REASON_REGEX (Pattern): A regular expression pattern for detecting messages
             that contain the word "reason".
-        _DOT_ASK_REGEX (Pattern): A regular expression pattern for matching messages
-            that start with the command ".ask" followed by some text.
         ParsedMessage (namedtuple): A named tuple class for representing parsed user messages,
             with fields for nick, ident, host, command, target, message, word_list,
             word_count, and timestamp.
     """
 
-    _EXIT_CODE = "goodnight"
     _USER_MSG_RE = re.compile(r":(\S+!\S+@\S+) ([A-Z]+) (\S+) :(.*)") # `:nick!ident@host COMMAND target :message`
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically\b")
     _REASON_REGEX = re.compile(r"\breason\b")
-    _DOT_ASK_REGEX = re.compile(r"^\.ask\s+(.+)")
-    _DOT_WA_REGEX = re.compile(r"^\.wa\s+(.+)")
-    _DOT_APOD_REGEX = re.compile(r"^\.apod\b")
-    _DOT_TRIVIA_REGEX = re.compile(r"^\.tr(ivia)?(\s*[AaBbCcDd]+)?")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -91,6 +84,7 @@ class Dispatcher(gevent.Greenlet):
         self._writer = writer
         self._logger = logger
         self._trivia = trivia
+        self._EXIT_REGEX = re.compile(rf":{self.admin_nick}[!~:@\w]+ PRIVMSG {self.nick} :goodnight")
 
     def _dispatch(self, line):
         """Dispatch a raw IRC line received from the reader.
@@ -117,40 +111,33 @@ class Dispatcher(gevent.Greenlet):
                 self._writer.inbox.put(f"JOIN {self.main_channel}")
             return
 
+        # quit on admin exit code
+        quit_match = self._EXIT_REGEX.match(line)
+        if quit_match:
+            logger.info(f"Exit code received. Shutting down.")
+            self._stop_event.set()
+            return
+
         # parse user message
         timestamp = time.time()
         parsed = self._parse_raw_msg(line, timestamp)
         if parsed is None:
             return   # server notice, MODE, etc.
 
-        # update current conversation
-        self._update_current_convo(parsed.nick, parsed.message)
-
-        # quit on admin exit code
-        if (
-            parsed.command == "PRIVMSG"
-            and parsed.nick
-            and parsed.nick.lower() == self.admin_nick.lower()
-            and parsed.message == self._EXIT_CODE
-        ):
-            logger.info(f"Exit code received from {parsed.nick}. Shutting down.")
-            self._stop_event.set()
-            return
-
         # filter out messages we don't care about
         if not self._should_dispatch(parsed):
             return
+
+        # update current conversation
+        self._update_current_convo(parsed.nick, parsed.message)
 
         # log message
         if not parsed.message.startswith((".", ",", "!")):
             self._logger.inbox.put(parsed)
 
         # dispatch to handler
+        trigger = parsed.word_list[0].lower().strip()
         try:
-            if parsed.message.startswith(".help"):
-                self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=71eb0e3db8454df1ae9dd8c223ef3664"
-                )
             if self._IMAGINE_REGEX.search(parsed.message):
                 self._pool.spawn(
                     self._run_function,
@@ -162,20 +149,25 @@ class Dispatcher(gevent.Greenlet):
                     self._run_function,
                     channel_functions.reason_will_prevail,
                 )
-            if parsed.message.startswith(".spaghetti"):
+            if trigger == ".help":
+                self._writer.inbox.put(
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=71eb0e3db8454df1ae9dd8c223ef3664"
+                )
+            if trigger == ".spaghetti":
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_spaghetti,
                 )
-            if self._DOT_ASK_REGEX.search(parsed.message):
+            if trigger == ".ask":
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_ask,
-                    parsed.word_list[1],
+                    parsed.nick,
+                    parsed.word_list,
                     parsed.target,
                     self._app_config.user_logs_path,
                 )
-            if self._DOT_WA_REGEX.search(parsed.message):
+            if trigger == ".wa":
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_wolfram,
@@ -183,14 +175,14 @@ class Dispatcher(gevent.Greenlet):
                     parsed.message,
                     self._app_config.wolfram_api_key.get_secret_value(),
                 )
-            if self._DOT_APOD_REGEX.search(parsed.message):
+            if trigger == ".apod":
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_apod,
                     parsed.nick,
                     self._app_config.nasa_api_key.get_secret_value(),
                 )
-            if parsed.message.startswith(self.nick):
+            if trigger == self.nick:
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.dot_arb,
@@ -202,8 +194,8 @@ class Dispatcher(gevent.Greenlet):
                     self._app_config.project_root,
                     self.nick,
                 )
-            if match := self._DOT_TRIVIA_REGEX.search(parsed.message):
-                self._trivia.inbox.put((parsed.nick, match))
+            if trigger in (".trivia", ".tr"):
+                self._trivia.inbox.put((parsed.nick, parsed.word_list))
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")
 
@@ -265,6 +257,8 @@ class Dispatcher(gevent.Greenlet):
         if msg.nick.lower() in self.ignore_list:
             return False
         if msg.target != self.main_channel:
+            return False
+        if len(msg.word_list) == 0:
             return False
         return True
 

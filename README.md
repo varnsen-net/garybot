@@ -10,14 +10,12 @@ Welcome to the repo for garybot, an IRC bot built with Python and gevent. Garybo
 
 ## Architecture
 
-Garybot uses a three-actor concurrency model built on gevent greenlets:
+Garybot uses a concurrent-actors model built on gevent greenlets, the primary of which are:
 
 - **Listener** — sits on the raw SSL socket, reads lines into a buffer, and puts complete lines onto a queue.
 - **Dispatcher** — receives raw IRC lines, parses them, and spawns short-lived greenlets to handle commands. Puts responses onto the Writer's inbox.
 - **Logger** — drains its inbox into an SQLite database for logging and later retrieval.
 - **Writer** — drains its inbox queue to the socket.
-
-Each actor is a `gevent.Greenlet`. The client manages the lifecycle of all three and handles reconnection automagically.
 
 ## Features
 

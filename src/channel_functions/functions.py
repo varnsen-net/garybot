@@ -74,16 +74,22 @@ def dot_spaghetti():
     return random.choice(SPAGHETTI_LYRICS)
 
 
-def dot_ask(queried_nick, target, user_logs_path):
+def dot_ask(nick, word_list, target, user_logs_path):
     """Fetch a random message from a user's log history in a given channel.
  
-    :param str queried_nick: The IRC nick to retrieve a random quote from.
     :param str target: The channel name to scope the query to.
     :param pathlib.Path user_logs_path: Filesystem path to the SQLite user
         log database.
     :returns: A formatted quote string ``<nick> message``.
     :rtype: str
     """
+    _CORRECT_SYNTAX = ".ask <nick>"
+
+    if len(word_list) < 2:
+        return f"{nick}: Correct syntax is {_CORRECT_SYNTAX}"
+
+    queried_nick = word_list[1]
+
     try:
         with sqlite3.connect(user_logs_path) as db:
             results = db.execute("""
@@ -98,7 +104,7 @@ def dot_ask(queried_nick, target, user_logs_path):
             selection = results.fetchone()[0]
         return f"<{queried_nick}> {selection}"
     except TypeError:
-        return f"Sorry, I have no record of {queried_nick} in {target}."
+        return f"{nick}: Sorry, I have no record of {queried_nick} in {target}."
 
 
 def dot_wolfram(nick, message, wolfram_api_key):

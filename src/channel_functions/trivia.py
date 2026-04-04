@@ -14,26 +14,10 @@ from gevent.queue import Queue, Empty
 from loguru import logger
 
 
-# def dot_trivia(nick):
-    # """"""
-    # n = random.randint(9,32)  # general knowledge to cartoons
-    # trivia_api = f"https://opentdb.com/api.php?amount=1&difficulty=medium&type=multiple&category={n}"
-    # response = requests.get(trivia_api).json()
-    # if response['response_code'] != 0:
-        # return f"{nick}: Sorry, I couldn't fetch a trivia question right now."
-    # question_data = response['results'][0]
-    # category = question_data['category']
-    # question = unescape(question_data['question'])
-    # correct_answer = unescape(question_data['correct_answer'])
-    # incorrect_answers = [unescape(ans) for ans in question_data['incorrect_answers']]
-    # options = incorrect_answers + [correct_answer]
-    # random.shuffle(options)
-    # options_str = ' '.join(f"({l}) {opt}" for l, opt in zip('abcd', options))
-    # return f"{nick}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
-
-
 class Trivia(gevent.Greenlet):
     """"""
+
+    _CORRECT_SYNTAX = ".tr[ivia] [AaBbCcDd]"
 
     def __init__(self, writer, stop_event, app_config):
         gevent.Greenlet.__init__(self)
@@ -45,34 +29,62 @@ class Trivia(gevent.Greenlet):
         self._deck = []
         self._players = {}
 
+    def _run(self):
+        """"""
+        logger.info("Trivia started.")
+        while not self._stop_event.is_set():
+            try:
+                turn = self.inbox.get(timeout=1)
+            except Empty:
+                continue
+            self._play(turn)
+
     def _play(self, turn):
         """"""
-        player = turn[0]
-        regex_match = turn[1].group(2) # group 2 is the answer part of the regex
+        player, word_list = turn
+        if len(word_list) > 2:
+            self._send(f"{player}: Correct syntax is {self._CORRECT_SYNTAX}")
+            return
         if not self._deck:
-            params = {"limit": 30, "difficulties": "medium,hard"}
-            response = requests.get(self._trivia_url, params=params)
-            if response.status_code != 200:
-                logger.error(f"Failed to fetch trivia questions: {response.status_code}")
+            self._replenish_deck()
+            if not self._deck:
+                self._send(f"{player}: Sorry, I'm having trouble fetching trivia questions right now. Please try again later.")
                 return
-            self._deck = response.json()
         if player not in self._players:
             self._create_player(player)
-        if not regex_match:
-            category, question, options_str, correct_option = self._create_trivia_question()
-            self._players[player]['current_answer'] = correct_option
-            self._players[player]['asked'] += 1
-            reponse = f"{player}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
-            self._writer.inbox.put(f"PRIVMSG {self._main_channel} :{reponse}")
+        if len(word_list) == 1:
+            self._ask_question(player)
+        elif (answer := word_list[1].lower()) in ('a', 'b', 'c', 'd'):
+            reply = self._compare_answers(player, answer)
+            self._send(reply)
+            self._players[player]['current_answer'] = None
+        else:
+            self._send(f"{player}: Invalid answer. Use {self._CORRECT_SYNTAX}")
+
+    def _send(self, message):
+        """"""
+        self._writer.inbox.put(f"PRIVMSG {self._main_channel} :{message}")
+
+    def _replenish_deck(self):
+        """"""
+        params = {"limit": 30, "difficulties": "medium,hard"}
+        response = requests.get(self._trivia_url, params=params)
+        if response.status_code != 200:
+            logger.error(f"Failed to replenish trivia deck: {response.status_code}")
             return
-        answer = regex_match.strip().lower()
-        reply = self._compare_answers(player, answer)
-        self._writer.inbox.put(f"PRIVMSG {self._main_channel} :{reply}")
-        self._players[player]['current_answer'] = None
+        self._deck = response.json()
 
     def _create_player(self, player):
         """"""
         self._players[player] = {"asked": 0, "correct": 0, "current_answer": None}
+
+    def _ask_question(self, player):
+        """"""
+        category, question, options_str, correct_option = self._create_trivia_question()
+        self._players[player]['current_answer'] = correct_option
+        self._players[player]['asked'] += 1
+        reponse = f"{player}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
+        self._send(reponse)
 
     def _create_trivia_question(self):
         """"""
@@ -104,11 +116,3 @@ class Trivia(gevent.Greenlet):
         accuracy = (correct / asked) * 100
         return f"{int(accuracy)}% ({correct}/{asked})"
 
-    def _run(self):
-        logger.info("Trivia started.")
-        while not self._stop_event.is_set():
-            try:
-                turn = self.inbox.get(timeout=1)
-            except Empty:
-                continue
-            self._play(turn)
