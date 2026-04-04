@@ -151,7 +151,7 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".help":
                 self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=b387e275f0eb44d8ad7f944fbffa7d07"
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=9b4a94f9f3c5496195e8975263f1bdce"
                 )
             if trigger == ".spaghetti":
                 self._pool.spawn(
@@ -200,7 +200,7 @@ class Dispatcher(gevent.Greenlet):
                     self._app_config.project_root,
                     self.nick,
                 )
-            if trigger in (".trivia", ".tr"):
+            if trigger == ".tr":
                 self._trivia.inbox.put((parsed.nick, parsed.word_list))
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")

@@ -17,7 +17,7 @@ from loguru import logger
 class Trivia(gevent.Greenlet):
     """"""
 
-    _CORRECT_SYNTAX = ".tr[ivia] [AaBbCcDd]"
+    _CORRECT_SYNTAX = ".tr [AaBbCcDd]"
 
     def __init__(self, writer, stop_event, app_config):
         gevent.Greenlet.__init__(self)
@@ -101,7 +101,7 @@ class Trivia(gevent.Greenlet):
     def _compare_answers(self, player, player_answer):
         """"""
         if not self._players[player]['current_answer']:
-            reply = f"{player}: You don't have an active question. Use .tr[ivia] to get one."
+            reply = f"{player}: You don't have an active question. Use .tr to get one."
         elif player_answer == self._players[player]['current_answer']:
             self._players[player]['correct'] += 1
             reply = f"{player}: Correct! Your score is now {self._report_accuracy(player)}."
