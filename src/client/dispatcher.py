@@ -13,7 +13,8 @@ from gevent.queue import Queue, Empty
 from gevent.pool import Pool
 from loguru import logger
 
-import src.channel_functions.functions as channel_functions
+import src.channel_functions.general as channel_functions
+from src.channel_functions.sportsbook import sportsbook as dot_sportsbook
 
 
 
@@ -151,7 +152,7 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".help":
                 self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=9b4a94f9f3c5496195e8975263f1bdce"
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=38e5a5c7a7874bb3a9c8934c7fababf4"
                 )
             if trigger == ".spaghetti":
                 self._pool.spawn(
@@ -202,6 +203,14 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".tr":
                 self._trivia.inbox.put((parsed.nick, parsed.word_list))
+            if trigger == ".sb":
+                self._pool.spawn(
+                    self._run_function,
+                    dot_sportsbook,
+                    parsed.nick,
+                    parsed.word_list,
+                    self._app_config.odds_api_key.get_secret_value(),
+                )
         except Exception as exc: # never let a bad handler kill the loop
             logger.exception(f"Handler raised an exception: {exc}")
 
