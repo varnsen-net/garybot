@@ -159,7 +159,7 @@ def dot_joke(nick):
     :rtype: str
     """
     jokes_api = "https://v2.jokeapi.dev/joke/Any?format=txt"
-    joke = requests.get(jokes_api).text.replace("\n\n", " ")
+    joke = requests.get(jokes_api).text.replace("\n\n", " ").replace("\n", " ")
     return f"{nick}: {joke}"
 
 
