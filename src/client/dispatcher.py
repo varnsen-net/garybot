@@ -85,7 +85,7 @@ class Dispatcher(gevent.Greenlet):
         self._writer = writer
         self._logger = logger
         self._trivia = trivia
-        self._EXIT_REGEX = re.compile(rf"{self.admin_nick}[!~:@\w]+ PRIVMSG {self.nick} :goodnight")
+        self._EXIT_REGEX = re.compile(rf"^:\S?{self.admin_nick}!.* PRIVMSG {self.nick} :goodnight$")
 
     def _dispatch(self, line):
         """Dispatch a raw IRC line received from the reader.
