@@ -151,7 +151,7 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".help":
                 self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=28b3e70c47e04cb2a38de167a7f5c37d"
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=b387e275f0eb44d8ad7f944fbffa7d07"
                 )
             if trigger == ".spaghetti":
                 self._pool.spawn(
