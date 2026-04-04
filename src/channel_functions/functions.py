@@ -151,6 +151,18 @@ def dot_apod(nick, nasa_api_key):
     return f"{nick}: {response}"
 
 
+def dot_joke(nick):
+    """Fetch a random joke from the JokeAPI and format it for IRC.
+
+    :param str nick: The IRC nick of the requesting user, prepended to the reply.
+    :returns: A joke.
+    :rtype: str
+    """
+    jokes_api = "https://v2.jokeapi.dev/joke/Any?format=txt"
+    joke = requests.get(jokes_api).text.replace("\n\n", " ")
+    return f"{nick}: {joke}"
+
+
 def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
             project_root, client_nick):
     """Generate a contextual reply using the Google Gemini API.

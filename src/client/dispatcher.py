@@ -151,7 +151,7 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".help":
                 self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=71eb0e3db8454df1ae9dd8c223ef3664"
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=28b3e70c47e04cb2a38de167a7f5c37d"
                 )
             if trigger == ".spaghetti":
                 self._pool.spawn(
@@ -181,6 +181,12 @@ class Dispatcher(gevent.Greenlet):
                     channel_functions.dot_apod,
                     parsed.nick,
                     self._app_config.nasa_api_key.get_secret_value(),
+                )
+            if trigger == ".haha":
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_joke,
+                    parsed.nick,
                 )
             if trigger == self.nick:
                 self._pool.spawn(
