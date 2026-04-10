@@ -147,7 +147,7 @@ def dot_apod(nick, nasa_api_key):
     date = apod_data['date']
     title = apod_data['title']
     url = f"https://apod.nasa.gov/apod/ap{date[2:].replace('-','')}.html"
-    response = f"15,01{header} 14{date} 04{title}: 10{url}"
+    response = f"{header} {date} {title}: {url}"
     return f"{nick}: {response}"
 
 

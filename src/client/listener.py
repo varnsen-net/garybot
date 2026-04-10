@@ -61,5 +61,6 @@ class Listener(gevent.Greenlet):
                     logger.error(f"Listener error: {e}")
                     self._stop_event.set()  # trigger shutdown
                     raise # re-raise so greenlet is marked as failed
+        logger.info("Listener stopped.")
 
 

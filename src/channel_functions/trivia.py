@@ -81,9 +81,10 @@ class Trivia(gevent.Greenlet):
     def _ask_question(self, player):
         """"""
         category, question, options_str, correct_option = self._create_trivia_question()
+        category = category.replace("_", " ")
         self._players[player]['current_answer'] = correct_option
         self._players[player]['asked'] += 1
-        reponse = f"{player}: 15,01TRIVIA 🧐 04{category}: {question} {options_str}"
+        reponse = f"{player}: TRIVIA [{category}]: {question} {options_str}"
         self._send(reponse)
 
     def _create_trivia_question(self):

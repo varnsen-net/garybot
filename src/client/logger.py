@@ -72,3 +72,4 @@ class Logger(gevent.Greenlet):
         finally:
             if self._conn:
                 self._conn.close()
+        logger.info("Logger stopped.")
