@@ -60,8 +60,6 @@ class Writer(gevent.Greenlet):
         :return: None
         :rtype: None
         """
-        if not isinstance(line, str):
-            raise ValueError(f"Expected str, got {type(line).__name__}")
         if not self._socket:
             raise OSError("Not connected")
 
