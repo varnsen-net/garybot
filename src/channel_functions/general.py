@@ -193,7 +193,7 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
             system_instruction=sys_msg,
             response_mime_type='application/json',
             response_schema=list[BotResponse],
-            max_output_tokens=500,
+            max_output_tokens=2000,
         ),
         contents=f"<{nick}> {message}",
     )
