@@ -59,6 +59,7 @@ class Dispatcher(gevent.Greenlet):
     _PING_RE = re.compile(r"^PING :(.+)$")
     _IMAGINE_REGEX = re.compile(r"^imagine unironically\b")
     _REASON_REGEX = re.compile(r"\breason\b")
+    _YOUTUBE_REGEX = re.compile(r"(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})")
 
     ParsedMessage = namedtuple("ParsedMessage", [
         "nick", "ident", "host", "command", "target", "message",
@@ -141,6 +142,13 @@ class Dispatcher(gevent.Greenlet):
                 self._pool.spawn(
                     self._run_function,
                     channel_functions.reason_will_prevail,
+                )
+            if match := self._YOUTUBE_REGEX.search(parsed.message):
+                self._pool.spawn(
+                    self._run_function,
+                    channel_functions.dot_youtube,
+                    match,
+                    self._app_config.youtube_api_key.get_secret_value(),
                 )
             if trigger == ".help":
                 self._writer.inbox.put(

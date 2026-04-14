@@ -47,6 +47,38 @@ def reason_will_prevail():
     return 'REASON WILL PREVAIL'
 
 
+def dot_youtube(match, youtube_api_key):
+    """"""
+    video_id = match.group(1)
+    response = requests.get(
+        "https://youtube.googleapis.com/youtube/v3/videos",
+        params={
+            "part": "snippet,contentDetails,statistics",
+            "id": video_id,
+            "key": youtube_api_key,
+        }
+    )
+    response.raise_for_status()  # Check if the request was successful
+    items = response.json().get("items", [])
+    if items:
+        video_info = items[0]
+        published = video_info["snippet"]["publishedAt"]
+        published = published.split("T")[0]  # Extract date part
+        title = video_info["snippet"]["title"]
+        channel = video_info["snippet"]["channelTitle"]
+        duration = video_info["contentDetails"]["duration"]
+        duration = duration[2:].lower()
+        views = video_info["statistics"].get("viewCount", "N/A")
+        views = format(int(views), ",") if views != "N/A" else views
+        likes = video_info["statistics"].get("likeCount", "N/A")
+        likes = format(int(likes), ",") if likes != "N/A" else likes
+        comments = video_info["statistics"].get("commentCount", "N/A")
+        comments = format(int(comments), ",") if comments != "N/A" else comments
+        return f"[YouTube] {title} | {channel} | {duration} | {published} | Views: {views} | Likes: {likes} | Comments: {comments}"
+    else:
+        return "[YouTube] Video not found."
+
+
 def dot_spaghetti():
     """Return a random Eminem lyric with 'spaghetti' substituted in.
  

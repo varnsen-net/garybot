@@ -1,10 +1,4 @@
 """
-sqlite> .schema user_logs
-CREATE TABLE user_logs (
-            nick text,
-            target text,
-            message text,
-            timestamp real);
 """
 import requests
 import random

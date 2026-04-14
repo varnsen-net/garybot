@@ -20,3 +20,5 @@ config:
     secure: AAABACSltW4zcH/I7r+m/X49gwhHW6LoMvUkC0JX5RRDgjbhZghFx/YBYbmpTs4eYgkeqKvd+vXaLG5ZZXm3m4RqLKY=
   garybot:nasa_api_key:
     secure: AAABAKcXt0HBx3zrdxpmbxvdqIXyKldQVy4eRocDEnszxB023nqhKqvq3gvJ83Wn59+CQBkt1MEM3NZTiYjRcW/hPsVCGodi
+  garybot:youtube_api_key:
+    secure: AAABAEBHWOpf9yblEuY3wsCuswNL3MgeUAxjdKW5ragP+iN90m4VqsRMpxoynfHe/z8x+Xhy0iHb0KqQDASv1fO1CULrZ9c=

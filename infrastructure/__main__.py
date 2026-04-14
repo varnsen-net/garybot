@@ -113,7 +113,6 @@ if __name__ == "__main__":
         'irc_server': app_config.require_secret("irc_server"),
         'irc_port': app_config.require_secret("irc_port"),
         'irc_main_channel': app_config.require_secret("irc_main_channel"),
-        'irc_exit_code': app_config.require("irc_exit_code"),
         'irc_llm_model': app_config.require("irc_llm_model"),
         'irc_ignore_list': app_config.require_secret("irc_ignore_list"),
         'irc_admin_nick': app_config.require("irc_admin_nick"),
@@ -121,6 +120,7 @@ if __name__ == "__main__":
         'odds_api_key': app_config.require_secret("odds_api_key"),
         'llm_api_key': app_config.require_secret("llm_api_key"),
         'nasa_api_key': app_config.require_secret("nasa_api_key"),
+        'youtube_api_key': app_config.require_secret("youtube_api_key"),
     }
     dot_env_file = pulumi.Output.all(**app_config_dict).apply(
         lambda cfg: base64.b64encode(
