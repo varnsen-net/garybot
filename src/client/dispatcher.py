@@ -85,7 +85,6 @@ class Dispatcher(gevent.Greenlet):
         self._writer = writer
         self._logger = logger
         self._trivia = trivia
-        self._EXIT_REGEX = re.compile(rf"^:\S?{self.admin_nick}!.* PRIVMSG {self.nick} :goodnight$")
 
     def _dispatch(self, line):
         """Dispatch a raw IRC line received from the reader.
@@ -110,13 +109,6 @@ class Dispatcher(gevent.Greenlet):
                 logger.warning(f"Kicked from {self.main_channel} — rejoining...")
                 gevent.sleep(2)
                 self._writer.inbox.put(f"JOIN {self.main_channel}")
-            return
-
-        # quit on admin exit code
-        quit_match = self._EXIT_REGEX.search(line)
-        if quit_match:
-            logger.info(f"Exit code received. Shutting down.")
-            self._stop_event.set()
             return
 
         # parse user message

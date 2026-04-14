@@ -2,7 +2,6 @@ config:
   vultr:apiKey:
     secure: AAABAMsL26WICk9WJmnxwV4+MDH56slpV1kqkGSCWqUSsVAHV6MXB7yeGVRRwiR9Wh4caw71JBw1ztf5OD/nE40REOM=
   garybot:irc_admin_nick: marymagenta
-  garybot:irc_exit_code: goodnight
   garybot:irc_ignore_list:
     secure: AAABAHKjWGezu71m9STtSg/hlL29kOqRFIuJ1j5UBntc/mEv1RhEw2RLP7989ZC27RIpy9esNujWeGIcKEbNu4M7cZ+VGQwHcTCRCNZBKtp/SrmL7aeq6rBH27d3LrOfngfTq0DVxR0um56zQkcBKPJv
   garybot:irc_llm_model: gemini-2.5-flash-lite

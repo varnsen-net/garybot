@@ -1,6 +1,5 @@
 config:
   garybot:irc_admin_nick: garygreen
-  garybot:irc_exit_code: goodnight
   garybot:irc_ignore_list:
     secure: AAABAPxeFZaV4IWOuBMsknvXcbt0XIhzMtnVne3a1qRPCvGgG5KNVfP6jiM+xkZcQhpcQPssuXVOors0BR1HRrlyTkn4I9hoVzBAwmJnmrczoPV45zKNCEeCQid0uqm38kW/W+WIGagLZdk4sE4rnLYC
   garybot:irc_llm_model: gemini-2.5-flash-lite
