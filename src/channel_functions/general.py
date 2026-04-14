@@ -7,6 +7,7 @@ import sqlite3
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+from loguru import logger
 
 
 class BotResponse(BaseModel):
@@ -187,24 +188,32 @@ def dot_arb(nick, message, llm_api_key, llm_model, current_convo,
     with open(project_root / 'prompt', 'r') as f:
         sys_msg = f.read().format(current_convo=current_convo, client_nick=client_nick)
     client = genai.Client(api_key=llm_api_key)
-    response = client.models.generate_content(
-        model=llm_model,
-        config=types.GenerateContentConfig(
-            system_instruction=sys_msg,
-            response_mime_type='application/json',
-            response_schema=list[BotResponse],
-            max_output_tokens=2000,
-        ),
-        contents=f"<{nick}> {message}",
-    )
-    finish_reason = response.candidates[0].finish_reason.name
-    if finish_reason == "STOP":
-        reply = (response.parsed[0].bot_reply_reverse_text[::-1]
-                 .strip('\n')
-                 .replace('\n\n', ' ')
-                 .replace('\n', ' '))
-    else:
-        reply = f"Sorry, I couldn't generate a complete response: {finish_reason}"
+    n = 3
+    for attempt in range(n):
+        try:
+            response = client.models.generate_content(
+                model=llm_model,
+                config=types.GenerateContentConfig(
+                    system_instruction=sys_msg,
+                    response_mime_type='application/json',
+                    response_schema=list[BotResponse],
+                    max_output_tokens=2000,
+                ),
+                contents=f"<{nick}> {message}",
+            )
+            finish_reason = response.candidates[0].finish_reason.name
+            if finish_reason != "STOP":
+                raise ValueError(f"Model did not finish properly (finish reason: {finish_reason}). Retrying...")
+            break
+        except Exception as e:
+            logger.warning(f"LLM response attempt {attempt + 1} failed: {e}")
+            if attempt == n - 1:
+                return f"{nick}: Sorry, I couldn't generate a complete response after {n} attempts."
+            continue 
+    reply = (response.parsed[0].bot_reply_reverse_text[::-1]
+             .strip('\n')
+             .replace('\n\n', ' ')
+             .replace('\n', ' '))
     return f"{nick}: {reply}"
 
     
