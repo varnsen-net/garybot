@@ -44,6 +44,7 @@ Garybot is configured via environment variables or a `.env` file in the project 
 | `WOLFRAM_API_KEY` | Wolfram Alpha API key |
 | `ODDS_API_KEY` | Odds API key |
 | `LLM_API_KEY` | LLM provider API key |
+| `YOUTUBE_API_KEY` | YouTube Data API key |
 
 `project_root` and `user_logs_path` are derived automatically from the config file location and can be overridden if needed.
 
