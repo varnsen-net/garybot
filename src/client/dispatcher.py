@@ -50,6 +50,8 @@ class Dispatcher(gevent.Greenlet):
             that begin with the phrase "imagine unironically".
         _REASON_REGEX (Pattern): A regular expression pattern for detecting messages
             that contain the word "reason".
+        _YOUTUBE_REGEX (Pattern): A regular expression pattern for extracting YouTube
+            video IDs from messages that contain YouTube links.
         ParsedMessage (namedtuple): A named tuple class for representing parsed user messages,
             with fields for nick, ident, host, command, target, message, word_list,
             word_count, and timestamp.
@@ -76,7 +78,6 @@ class Dispatcher(gevent.Greenlet):
         self.inbox = Queue()
         self.nick = app_config.irc_nick
         self.main_channel = app_config.irc_main_channel
-        self.admin_nick = app_config.irc_admin_nick
         self.ignore_list = {n.lower().strip() for n in app_config.irc_ignore_list.split(",") if n.strip()}
         self.current_convo = []
 
@@ -86,6 +87,24 @@ class Dispatcher(gevent.Greenlet):
         self._writer = writer
         self._logger = logger
         self._trivia = trivia
+
+    def _run(self):
+        """The main loop of the dispatcher greenlet. Continuously reads lines
+        from the inbox and dispatches them until the stop event is set.
+
+        :return: None
+        :rtype: None
+        """
+        logger.info("Dispatcher started.")
+        while not self._stop_event.is_set():
+            try:
+                line = self.inbox.get(timeout=1)
+            except Empty:
+                continue
+            try:
+                self._dispatch(line)
+            except Exception as e:
+                logger.exception(f"Error dispatching line: {line}\nException: {e}")
 
     def _dispatch(self, line):
         """Dispatch a raw IRC line received from the reader.
@@ -152,7 +171,7 @@ class Dispatcher(gevent.Greenlet):
                 )
             if trigger == ".help":
                 self._writer.inbox.put(
-                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=38e5a5c7a7874bb3a9c8934c7fababf4"
+                    f"PRIVMSG {self.main_channel} :{parsed.nick}: https://markdownpastebin.com/?id=ec96599a4ecc4673a182e6f55e36bb6b"
                 )
             if trigger == ".spaghetti":
                 self._pool.spawn(
@@ -298,21 +317,3 @@ class Dispatcher(gevent.Greenlet):
         except Exception as e:
             logger.exception(f"Error in handler function: {e}")
             self._writer.inbox.put(f"PRIVMSG {self.main_channel} :Sorry, an error occurred while processing your request.")
-
-    def _run(self):
-        """The main loop of the dispatcher greenlet. Continuously reads lines
-        from the inbox and dispatches them until the stop event is set.
-
-        :return: None
-        :rtype: None
-        """
-        logger.info("Dispatcher started.")
-        while not self._stop_event.is_set():
-            try:
-                line = self.inbox.get(timeout=1)
-            except Empty:
-                continue
-            try:
-                self._dispatch(line)
-            except Exception as e:
-                logger.exception(f"Error dispatching line: {line}\nException: {e}")

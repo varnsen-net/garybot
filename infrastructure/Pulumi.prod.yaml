@@ -1,7 +1,6 @@
 config:
-  garybot:irc_admin_nick: garygreen
   garybot:irc_ignore_list:
-    secure: AAABAPxeFZaV4IWOuBMsknvXcbt0XIhzMtnVne3a1qRPCvGgG5KNVfP6jiM+xkZcQhpcQPssuXVOors0BR1HRrlyTkn4I9hoVzBAwmJnmrczoPV45zKNCEeCQid0uqm38kW/W+WIGagLZdk4sE4rnLYC
+    secure: AAABAENfUpOwWpDPj4PbtjXGM+TQfQVjlj6nUu7ajbh3E5aweBlkk2x0lvqLvlYu1i6zMd/+F159PbtXVW4XcsxEoY640wq8MzrWbRV57hl63JKg8bd+u+EODGI=
   garybot:irc_llm_model: gemini-2.5-flash-lite
   garybot:irc_main_channel:
     secure: AAABAF27ZNL59cwBZcywaxq6ZdL+yl1pn4f47l84hLPCJpQHXGX6ASvKArbILVZ0gG/rTQ==

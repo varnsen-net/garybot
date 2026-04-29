@@ -115,7 +115,6 @@ if __name__ == "__main__":
         'irc_main_channel': app_config.require_secret("irc_main_channel"),
         'irc_llm_model': app_config.require("irc_llm_model"),
         'irc_ignore_list': app_config.require_secret("irc_ignore_list"),
-        'irc_admin_nick': app_config.require("irc_admin_nick"),
         'wolfram_api_key': app_config.require_secret("wolfram_api_key"),
         'odds_api_key': app_config.require_secret("odds_api_key"),
         'llm_api_key': app_config.require_secret("llm_api_key"),

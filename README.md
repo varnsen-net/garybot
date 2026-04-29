@@ -21,12 +21,11 @@ Garybot uses a concurrent-actors model built on gevent greenlets, the primary of
 
 - SSL/TLS connection
 - Auto-rejoin on kick
-- Admin exit code for clean remote shutdown
-- Per-user message logging to SQLite
+- Per-user message logging
 - Nick ignore list
-- LLM-powered responses
+- LLM-powered chatbot responses
 - Custom channel triggers
-- Greenlet pool for concurrent handler execution
+- Greenlet pool for concurrent function handling
 
 ## Configuration
 
@@ -44,6 +43,7 @@ Garybot is configured via environment variables or a `.env` file in the project 
 | `WOLFRAM_API_KEY` | Wolfram Alpha API key |
 | `ODDS_API_KEY` | Odds API key |
 | `LLM_API_KEY` | LLM provider API key |
+| `NASA_API_KEY` | NASA API key |
 | `YOUTUBE_API_KEY` | YouTube Data API key |
 
 `project_root` and `user_logs_path` are derived automatically from the config file location and can be overridden if needed.

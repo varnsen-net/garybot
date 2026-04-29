@@ -19,17 +19,20 @@ from src.actors.build import build_actors
 
 
 class IRCClient:
-    """
-    SSL IRC client designed for a single-bot deployment.
+    """SSL IRC client.
+
+    This client connects to an IRC server, registers with a nickname, and joins
+    a main channel. It then starts several actors to handle listening for
+    messages, processing them, logging, and writing responses.
 
     Attributes:
-        server (str): IRC server hostname or IP address.
-        port (int): IRC server port number.
-        nick (str): Bot's nickname on the server.
-        main_channel (str): Main channel to join on startup.
-        _sock (ssl.SSLSocket | None): SSL socket for communication with the server.
-        _stop_event (gevent.event.Event): Event to signal threads to stop.
-        _app_config: Configuration object containing app settings.
+        server (str): The IRC server address.
+        port (int): The IRC server port.
+        nick (str): The bot's nickname.
+        main_channel (str): The main channel to join.
+        _sock (ssl.SSLSocket | None): The SSL socket for communication.
+        _stop_event (gevent.event.Event): Event to signal actors to stop.
+        _app_config: The application configuration object.
     """
 
     _RECV_TIMEOUT = 5.0

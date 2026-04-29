@@ -12,6 +12,7 @@ from src.config.config import get_config
 
 
 def main():
+    """Entry point for the application."""
 
     logger.info("Loading app config...")
     app_config = get_config()
